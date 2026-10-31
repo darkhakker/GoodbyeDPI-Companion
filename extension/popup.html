@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GoodbyeDPI Companion</title><link rel="stylesheet" href="popup.css">
+<body><header><span class="mark">G</span><div><h1>GoodbyeDPI</h1><p>Сайты под вашим контролем</p></div><button id="refresh" title="Обновить">↻</button></header>
+<section class="status"><strong id="status">Подключение…</strong><p id="detail"></p><button id="toggle">Включить</button></section>
+<label class="profile">Режим обхода<select id="profile"><option value="balanced">Смешанные поддельные пакеты</option><option value="sequence">Поддельные номера TCP</option><option value="fragment">Только фрагментация</option></select></label>
+<form id="add"><label for="domain">Добавить сайт и все его поддомены</label><div class="row"><input id="domain" placeholder="tiktok.com" required><button>Добавить</button></div><button type="button" id="current" class="text">Добавить текущий сайт</button></form>
+<p class="hint">Ресурсы добавленного сайта обнаруживаются автоматически при посещении. Для новых зависимостей может потребоваться обновить страницу.</p>
+<div id="sites"></div><p id="empty">Добавьте первый сайт. Остальные домены не включаются в обход.</p>
+<details><summary>Установка компонентов Windows</summary><p>Скачайте ZIP, распакуйте и запустите Install.cmd. Windows запросит права администратора. Браузер не устанавливает драйвер самостоятельно.</p><label>Репозиторий GitHub<input id="repo" placeholder="https://github.com/owner/repo"></label><div class="row"><button id="saveRepo">Сохранить адрес</button><button id="download">Скачать компоненты</button></div><p id="extensionId"></p></details>
+<footer>Обход действует на выбранные домены во всей Windows. Общий CDN может использоваться другими сайтами. DNS и QUIC глобально не меняются.</footer><p id="error" role="alert"></p><script type="module" src="popup.js"></script></body></html>

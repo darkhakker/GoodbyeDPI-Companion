@@ -1,0 +1,28 @@
+name: Build and test Windows companion
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Domain and worker integration tests
+        run: node --test tests/domains.test.mjs tests/background.test.mjs
+      - name: Compile and bundle
+        shell: powershell
+        run: ./scripts/Build.ps1
+      - name: Native protocol and policy tests
+        shell: powershell
+        run: ./tests/native-protocol.ps1
