@@ -1,7 +1,7 @@
 # Пакет публикации Chrome Web Store
 
 Подготовлено для **уже созданной** карточки:
-`fodhcnbgkempfhhmolplgmgjaamcfbia`.
+`aekknlficknemkbdbkfcmohdmdblbmhb`.
 
 ## Что сделать в кабинете
 
@@ -9,7 +9,7 @@
    `GoodbyeDPI-Companion-WebStore-0.1.5.zip`. Не создавайте новый продукт:
    магазинный ID уже встроен в Windows-компонент. В ZIP manifest.json находится в корне,
    поле key для распакованной версии удалено, EXE/DLL/SYS внутрь не входят.
-2. В **«Описании продукта»** скопируйте текст из `01-LISTING-RU.txt`.
+2. В **«Описании продукта»** скопируйте только полное описание из `FIELD-description-only.txt`.
    Название и короткое описание берутся из нового пакета. Укажите русский язык.
 3. Загрузите изображения по таблице ниже. Видеоролик можно оставить пустым.
 4. В **«Конфиденциальности»** используйте `02-PRIVACY-FIELDS-RU.txt`: единая цель,
@@ -47,7 +47,7 @@
 - Windows-пакет для проверяющего:
   https://github.com/darkhakker/GoodbyeDPI-Companion/releases/tag/v0.1.5-preview.1
 - Страница магазина после одобрения:
-  https://chromewebstore.google.com/detail/fodhcnbgkempfhhmolplgmgjaamcfbia
+  https://chromewebstore.google.com/detail/aekknlficknemkbdbkfcmohdmdblbmhb
 
 «Официальный URL» с проверкой владения доменом можно оставить «Нет» — владение
 репозиторием не означает владение всем github.com. Главная и поддержка — отдельные поля.

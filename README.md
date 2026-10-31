@@ -176,7 +176,7 @@ Named pipe разрешает управление учётной записи, 
 
 ## Публикация в Chrome Web Store
 
-Карточка магазина: `fodhcnbgkempfhhmolplgmgjaamcfbia`.
+Карточка магазина: `aekknlficknemkbdbkfcmohdmdblbmhb`.
 Сборка upload ZIP: `scripts/Build-Store.ps1`. В архиве manifest.json находится в корне, ключ распакованной версии удалён.
 Материалы карточки, изображения и инструкция: `store/00-START-PUBLICATION.md`.
 Политика конфиденциальности: [docs/PRIVACY.md](docs/PRIVACY.md).

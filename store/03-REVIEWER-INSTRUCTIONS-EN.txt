@@ -1,5 +1,5 @@
 Product: GoodbyeDPI Companion
-Chrome Web Store item ID: fodhcnbgkempfhhmolplgmgjaamcfbia
+Chrome Web Store item ID: aekknlficknemkbdbkfcmohdmdblbmhb
 Platform: Windows 10/11, .NET Framework 4.8. It is not functional as a DPI engine on macOS/Linux/ChromeOS.
 No login, paid account or credentials are required.
 

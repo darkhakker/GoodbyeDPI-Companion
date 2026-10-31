@@ -1,12 +1,3 @@
-# GoodbyeDPI Companion 0.1.5 — пакет для Chrome Web Store и новое оформление
+# GoodbyeDPI Companion 0.1.5
 
-- Windows-компонент поддерживает точный магазинный ID fodhcnbgkempfhhmolplgmgjaamcfbia и сохранённый ID распакованной версии. Другие origins отклоняются.
-- Добавлено одноразовое уведомление и явное согласие до обработки запросов и загрузки установщика. Согласие можно отозвать в настройках.
-- Политика конфиденциальности опубликована в docs/PRIVACY.md; подготовлены тексты карточки, объяснения разрешений и инструкция проверяющему.
-- Новый знак: две дуги и точка. Новая сливовая, кремовая и янтарная палитра вместо щита/стрелки/бирюзового оформления.
-- Материалы магазина полностью обновлены: фактический popup с демонстрационными данными, три скриншота и два промобаннера.
-- Отдельный WebStore.zip содержит manifest.json в корне, без dev key и без EXE/драйверов.
-- Setup.exe после успешной установки предлагает открыть страницу расширения в Chrome Web Store. До одобрения Google эта страница может быть недоступна публично.
-
-Материалы в store/00-START-PUBLICATION.md. Это подготовка к публикации, а не подтверждение одобрения Google.
-Нужен Windows-компонент версии 0.1.5 для магазинного ID. Не запускайте магазинную и dev-версию одновременно.
+Chrome Web Store ID updated to aekknlficknemkbdbkfcmohdmdblbmhb. Native host and installer accept this exact store origin and the existing unpacked origin. Extension downloads the matching v0.1.5-preview.1 installer. Store package and reviewer instructions updated.

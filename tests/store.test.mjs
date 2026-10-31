@@ -5,7 +5,7 @@ const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8'
 test('store and unpacked IDs are exact and both compiled origins are generated', () => {
   const store = read('store-extension-id.txt').trim(), dev = read('extension-id.txt').trim();
   assert.match(store, /^[a-p]{32}$/); assert.match(dev, /^[a-p]{32}$/);
-  assert.equal(store, 'fodhcnbgkempfhhmolplgmgjaamcfbia'); assert.notEqual(store, dev);
+  assert.equal(store, 'aekknlficknemkbdbkfcmohdmdblbmhb'); assert.notEqual(store, dev);
   const code = read('native/BuildInfo.cs'); assert(code.includes(store)); assert(code.includes(dev));
   assert(read('installer/Install.ps1').includes('"chrome-extension://$storeId/"'));
 });
