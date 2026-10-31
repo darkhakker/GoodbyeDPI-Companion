@@ -1,4 +1,4 @@
-import { RELEASE_TAG } from './config.js';
+import { installerText } from './setup-state.js';
 const $ = id => document.getElementById(id);
 let view;
 async function call(action, data = {}) {
@@ -16,10 +16,15 @@ function button(text, handler, className = '') {
 function render() {
   const { state, nativeState: n, nativeError, seeds } = view;
   $('status').textContent = n ? n.running ? 'Обход включён' : state.enabled && view.domains.length ? 'Движок не запущен' : 'Обход выключен' : 'Компонент Windows недоступен';
-  $('detail').textContent = nativeError || n?.errorDetail || `${view.domains.length} доменов в списке · поддомены включены`;
+  $('detail').textContent = n ? n.errorDetail || `${view.domains.length} доменов в списке · поддомены включены` : view.nativeMissing ? 'Загружаем компоненты для первого запуска.' : nativeError;
   $('toggle').textContent = state.enabled ? 'Выключить' : 'Включить';
   $('profile').value = state.profile;
-  if (document.activeElement !== $('repo')) $('repo').value = state.repository;
+  $('toggle').disabled = !n;
+  $('installation').hidden = !!n;
+  $('installStatus').textContent = installerText(view.installer);
+  $('downloadError').textContent = view.installer.error || '';
+  $('showInstaller').disabled = view.installer.state !== 'complete' || view.installer.exists === false;
+  $('retryDownload').disabled = ['starting', 'in_progress'].includes(view.installer.state);
   $('extensionId').textContent = `ID расширения: ${chrome.runtime.id}`;
   $('sites').replaceChildren(); $('empty').hidden = !!state.sites.length;
   for (const site of state.sites) {
@@ -50,10 +55,7 @@ $('current').addEventListener('click', async () => { const [tab] = await chrome.
 $('toggle').addEventListener('click', () => call('enabled', { value: !view.state.enabled }));
 $('profile').addEventListener('change', () => call('profile', { value: $('profile').value }));
 $('refresh').addEventListener('click', () => call('sync'));
-$('saveRepo').addEventListener('click', () => call('repository', { value: $('repo').value }));
-$('download').addEventListener('click', async () => {
-  if (!await call('repository', { value: $('repo').value })) return;
-  if (!view.state.repository) { $('error').textContent = 'Укажите репозиторий GitHub с опубликованным релизом'; return; }
-  await chrome.tabs.create({ url: `${view.state.repository}/releases/download/${RELEASE_TAG}/GoodbyeDPI-Companion-Windows.zip` });
-});
+$('showInstaller').addEventListener('click', () => call('showInstaller'));
+$('retryDownload').addEventListener('click', () => call('download'));
+setInterval(() => { if (view && !view.nativeState) void call('view'); }, 2000);
 void call('view');

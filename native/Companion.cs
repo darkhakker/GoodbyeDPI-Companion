@@ -202,7 +202,7 @@ namespace GoodbyeDPICompanion {
                                 }
                                 if (settings.enabled && settings.domains.Length > 0 && !Running()) TryStart();
                                 if ((!settings.enabled || settings.domains.Length == 0) && Running()) StopEngine();
-                                result = new { ok = true, running = Running(), enabled = settings.enabled, profile = settings.profile, domainCount = settings.domains.Length, errorDetail = lastError, version = "0.1.0" };
+                                result = new { ok = true, running = Running(), enabled = settings.enabled, profile = settings.profile, domainCount = settings.domains.Length, errorDetail = lastError, version = "0.1.1" };
                             }
                         } catch (Exception e) { result = new { ok = false, error = e.Message }; }
                         Protocol.Write(pipe, result);

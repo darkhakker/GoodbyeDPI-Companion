@@ -5,12 +5,13 @@ import { setTimeout as pause } from 'node:timers/promises';
 
 test('worker: UI commands, scoped learning, exclusions, removal, host failure and sync', async () => {
   const listeners = {}, sent = [], persisted = [];
-  let nativeMissing = false;
+  const storage = { state: { sites: [], enabled: false, profile: 'balanced', revision: 0, repository: 'https://untrusted.invalid' } }, downloads = [];
+  let nativeMissing = false, serviceError = false;
   const event = name => ({ addListener(fn) { listeners[name] = fn; } });
   globalThis.chrome = {
     storage: { local: {
-      get: async () => ({}),
-      set: async value => { persisted.push(structuredClone(value)); }
+      get: async keys => Object.fromEntries((Array.isArray(keys) ? keys : [keys]).filter(x => x in storage).map(x => [x, structuredClone(storage[x])])),
+      set: async value => { Object.assign(storage, structuredClone(value)); persisted.push(structuredClone(value)); }
     } },
     runtime: {
       id: 'test-extension', getURL: file => file,
@@ -19,12 +20,18 @@ test('worker: UI commands, scoped learning, exclusions, removal, host failure an
         assert.equal(name, 'org.goodbyedpi.companion');
         sent.push(structuredClone(message));
         if (nativeMissing) throw new Error('Native messaging host not found');
+        if (serviceError) return { ok: false, error: 'Local service is stopped' };
         return { ok: true, running: message.enabled && message.domains.length > 0 };
       }
     },
     action: { setBadgeText: async () => {} },
     alarms: { create: async () => {}, onAlarm: event('alarm') },
-    tabs: { get: async id => ({ url: id === 1 ? 'https://www.example.com/page' : 'https://unselected.org/' }) },
+    tabs: { get: async id => ({ url: id === 1 ? 'https://www.example.com/page' : 'https://unselected.org/' }), create: async () => {} },
+    downloads: {
+      download: async options => { downloads.push(options); return downloads.length; },
+      search: async ({ id }) => downloads[id - 1] ? [{ id, state: 'in_progress', bytesReceived: 1, totalBytes: 10, exists: false }] : [],
+      show: async () => {}
+    },
     webRequest: { onBeforeRequest: event('request') }
   };
   const oldFetch = globalThis.fetch;
@@ -36,8 +43,14 @@ test('worker: UI commands, scoped learning, exclusions, removal, host failure an
   try {
     let result = await message('view');
     assert.deepEqual(result.domains, []);
+    assert.equal(result.state.repository, undefined);
     result = await message('add', { domain: 'https://www.example.com/page' });
     assert.deepEqual(result.domains, ['example.com']);
+    serviceError = true;
+    result = await message('view');
+    assert.equal(result.nativeMissing, false);
+    assert.equal(downloads.length, 0); // A stopped service is not a missing installation.
+    serviceError = false;
     await message('enabled', { value: true });
     listeners.request({ tabId: 2, url: 'https://unrelated-cdn.org/x', type: 'script', initiator: 'https://unselected.org' });
     listeners.request({ tabId: 1, url: 'https://assets.shared.net/x', type: 'script', initiator: 'https://example.com' });
@@ -59,7 +72,14 @@ test('worker: UI commands, scoped learning, exclusions, removal, host failure an
     result = await message('add', { domain: 'tiktok.com' });
     assert.equal(result.ok, true); // Configuration is retained for later installation.
     assert.match(result.nativeError, /host not found/);
-    assert(persisted.at(-1).state.sites.some(x => x.domain === 'tiktok.com'));
+    assert(storage.state.sites.some(x => x.domain === 'tiktok.com'));
+    assert.equal(downloads.length, 1);
+    assert.equal(downloads[0].saveAs, false);
+    assert.match(downloads[0].url, /^https:\/\/github.com\/darkhakker\/GoodbyeDPI-Companion\/releases\/download\/v0.1.1-preview.1\/GoodbyeDPI-Companion-Setup.exe$/);
+    await message('view'); await message('view');
+    assert.equal(downloads.length, 1); // Popup polling must not download repeatedly.
+    result = await message('repository', { value: 'https://untrusted.invalid' });
+    assert.equal(result.ok, false);
     nativeMissing = false;
     result = await message('sync');
     assert.equal(result.nativeError, '');

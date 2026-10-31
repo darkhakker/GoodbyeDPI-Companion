@@ -5,13 +5,17 @@
 Подтверждено:
 
 - C# скомпилирован встроенным компилятором .NET Framework, с предупреждениями как ошибками.
-- 9 тестов Node.js прошли: нормализация доменов и IDN, Public Suffix List/PRIVATE,
+- 16 тестов Node.js прошли: автоскачивание, защита от дубликатов и повторов после ошибок,
+  восстановление после перезапуска worker, миграция старого URL, состояние установки,
+  нормализация доменов и IDN, Public Suffix List/PRIVATE,
   защита от доменов-двойников, изоляция выбранного сайта, исключения, удаление,
   ограничение роста, TikTok seed-список, сохранение настроек при недоступном host.
 - Self-test нативного компонента прошёл: разбор конфигурации, отклонение неизвестных
   команд, произвольных параметров, публичных доменных зон, слишком больших сообщений,
   проверка профилей и двоичного протокола.
 - Реальный Companion.exe корректно отклонил чужой extension origin.
+- Setup.exe скомпилирован; проверка --verify-payload проверила все встроенные файлы
+  и SHA-256 без распаковки и установки. GUI установки и реальный UAC не запускались.
 - Реальная цепочка stdin → Native Messaging host → тестовый локальный named pipe →
   stdout передала запрос и ответ. Выполнено вне песочницы; песочница блокирует эту связь.
   Служба и драйвер при тесте не устанавливались.
@@ -32,7 +36,7 @@
 Воспроизведение:
 
 ```powershell
-node --test tests/domains.test.mjs tests/background.test.mjs
+node --test tests/domains.test.mjs tests/background.test.mjs tests/installation.test.mjs
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/Build.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/native-protocol.ps1
 ```

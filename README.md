@@ -1,6 +1,6 @@
-# GoodbyeDPI Companion — предварительная версия 0.1.0
+# GoodbyeDPI Companion — предварительная версия 0.1.1
 
-[Скачать расширение](https://github.com/darkhakker/GoodbyeDPI-Companion/releases/download/v0.1.0-preview.1/GoodbyeDPI-Companion-Extension.zip) · [Скачать компонент Windows](https://github.com/darkhakker/GoodbyeDPI-Companion/releases/download/v0.1.0-preview.1/GoodbyeDPI-Companion-Windows.zip)
+[Скачать расширение](https://github.com/darkhakker/GoodbyeDPI-Companion/releases/download/v0.1.1-preview.1/GoodbyeDPI-Companion-Extension.zip) · [Установщик Windows](https://github.com/darkhakker/GoodbyeDPI-Companion/releases/download/v0.1.1-preview.1/GoodbyeDPI-Companion-Setup.exe)
 
 Это предварительная сборка; установка на чистой Windows и работа у конкретного провайдера ещё требуют проверки.
 
@@ -13,8 +13,10 @@
 1. Откройте `chrome://extensions` или `edge://extensions`, включите режим разработчика.
 2. Нажмите «Загрузить распакованное расширение» и выберите папку `extension`.
    Для скачанного `GoodbyeDPI-Companion-Extension.zip` сначала распакуйте архив.
-3. Распакуйте `release/GoodbyeDPI-Companion-Windows.zip` в любую папку и запустите
-   `Install.cmd` внутри. Подтвердите запрос администратора Windows.
+3. Если компонент Windows отсутствует, расширение автоматически скачает
+   `GoodbyeDPI-Companion-Setup.exe` и откроет страницу первого запуска.
+   Откройте скачанный установщик и подтвердите запрос администратора Windows.
+   Файлы распакуются автоматически; ссылки, драйверы и зависимости указывать не нужно.
 4. Откройте расширение, нажмите ↻. Добавьте `tiktok.com` или другой сайт.
 5. Остановите старую службу GoodbyeDPI и обычный START-restored.cmd, если они работают.
    Новая программа не останавливает их самостоятельно, а сообщает о конфликте.
@@ -67,22 +69,28 @@
 Весь этот каталог можно поместить в собственный Git-репозиторий. Личные списки доменов,
 история браузера и настройки с вашего компьютера в проект не включены.
 
-1. Создайте GitHub Release, `v0.1.0-preview.1` с отметкой Pre-release.
+1. Создайте GitHub Release, `v0.1.1-preview.1` с отметкой Pre-release.
 2. Прикрепите файлы из `release`:
    - `GoodbyeDPI-Companion-Extension.zip`;
+   - `GoodbyeDPI-Companion-Setup.exe`;
    - `GoodbyeDPI-Companion-Windows.zip`;
    - `SHA256SUMS.json`.
-3. Опубликуйте релиз. Версия загрузки закреплена в `extension/config.js`. Кнопка расширения использует URL
-   `https://github.com/darkhakker/GoodbyeDPI-Companion/releases/download/v0.1.0-preview.1/GoodbyeDPI-Companion-Windows.zip`.
-4. В расширении откройте «Установка компонентов Windows», сохраните URL репозитория.
-   Адрес репозитория и тег релиза заданы в `extension/config.js`, состояние хранится в
-   `extension/background.js`. Не меняйте поле `key` в manifest.json.
+3. Опубликуйте релиз. Адрес проекта и версия закреплены в `extension/config.js`.
+   Автозагрузка использует только наш фиксированный URL Setup.exe; поля репозитория
+   и возможности подменить URL через настройки расширения больше нет.
+4. Не меняйте поле `key` в manifest.json — оно сохраняет ID распакованного расширения.
 
 GitHub ZIP расширения устанавливается через режим разработчика; это не автоматическая
 установка из магазина. Для обычной установки потребуется отдельно опубликовать расширение
 в Chrome Web Store / Edge Add-ons, сверить выданный ID и обновить разрешённый origin
-компонента Windows. Скачивание ZIP не даёт расширению права запустить установщик:
-пользователь запускает Install.cmd и подтверждает UAC один раз.
+компонента Windows. Автоскачивание не даёт расширению права запустить EXE:
+пользователь открывает Setup.exe и подтверждает UAC один раз. Если браузер настроен
+спрашивать место сохранения или проверяет EXE, его собственные запросы сохраняются.
+Архив Windows оставлен как запасной вариант ручной установки через Install.cmd.
+
+При повторном открытии popup загрузка не повторяется. Ошибка сети, отмена или удаление
+файла показываются с кнопкой повторного скачивания. Остановленная служба при наличии
+host не считается отсутствующей установкой и не вызывает неожиданной загрузки.
 
 ## Сборка из исходников
 
@@ -91,7 +99,7 @@ GitHub ZIP расширения устанавливается через реж
 Node.js/Python/.NET SDK ставить не требуется. На Windows ARM эта версия не тестировалась.
 
 ```powershell
-node --test tests/domains.test.mjs
+node --test tests/domains.test.mjs tests/background.test.mjs tests/installation.test.mjs
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/Build.ps1
 release/GoodbyeDPI-Companion-Windows/Companion.exe --self-test
 ```
@@ -102,7 +110,10 @@ release/GoodbyeDPI-Companion-Windows/Companion.exe --self-test
 пересоберите Windows-компонент и переустановите его.
 
 Официальный архив зависимостей закреплён SHA-256 в Build.ps1. Сборка сверяет архив,
-затем формирует checksums.json для установки и SHA256SUMS.json для ZIP.
+затем формирует checksums.json для установки и SHA256SUMS.json для ZIP/EXE.
+Setup.exe содержит весь Windows ZIP внутри, проверяет его SHA-256 и самостоятельно
+распаковывает в отдельную папку LocalAppData перед запуском установочного сценария.
+Проверка `Setup.exe --verify-payload` не устанавливает службу и драйвер.
 Это контроль целостности, а не цифровая подпись и не независимая проверка издателя.
 Перед публичным стабильным релизом нужны испытания на чистой Windows и подпись
 собственного Companion.exe/установочного пакета. Поставляемый компонент Companion.exe
@@ -126,7 +137,9 @@ Named pipe разрешает управление учётной записи, 
 
 Расширение запрашивает доступ HTTP/HTTPS ко всем сайтам, чтобы видеть сторонние ресурсы,
 но сохраняет только имена доменов ресурсов добавленных сайтов, без URL-путей и содержимого.
-Списки не отправляются на сервер. На GitHub браузер обращается только по кнопке загрузки.
+Списки не отправляются на сервер. Браузер обращается на GitHub для автоматического
+скачивания Setup.exe при отсутствии host, либо для явного повторного скачивания.
+Разрешение downloads используется для загрузки и показа файла, не для запуска EXE.
 Установка WinDivert происходит при первом запуске движка, не просто при скачивании архива.
 
 ## Удаление и диагностика

@@ -19,10 +19,15 @@ jobs:
           node-version: '24'
           package-manager-cache: false
       - name: Domain and worker integration tests
-        run: node --test tests/domains.test.mjs tests/background.test.mjs
+        run: node --test tests/domains.test.mjs tests/background.test.mjs tests/installation.test.mjs
       - name: Compile and bundle
         shell: powershell
         run: ./scripts/Build.ps1
       - name: Native protocol and policy tests
         shell: powershell
         run: ./tests/native-protocol.ps1
+      - name: Verify embedded installer payload without installing
+        shell: powershell
+        run: |
+          $process = Start-Process ./release/GoodbyeDPI-Companion-Setup.exe -ArgumentList '--verify-payload' -Wait -PassThru -WindowStyle Hidden
+          if ($process.ExitCode -ne 0) { throw 'Embedded installer payload verification failed' }

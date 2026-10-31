@@ -1,11 +1,13 @@
 import { hostname, parsePSL, registrable, matches, SEEDS, effectiveDomains, learn } from './domains.js';
-import { REPOSITORY } from './config.js';
+import { RELEASE_TAG, SETUP_URL } from './config.js';
+import { createInstaller } from './installation.js';
 const HOST = 'org.goodbyedpi.companion';
+const installer = createInstaller(chrome, RELEASE_TAG, SETUP_URL);
 const ready = (async () => {
   const psl = parsePSL(await (await fetch(chrome.runtime.getURL('public_suffix_list.dat'))).text());
   const saved = await chrome.storage.local.get(['state']);
-  const state = saved.state || { sites: [], enabled: false, profile: 'balanced', repository: REPOSITORY, revision: 0 };
-  if (!state.repository) state.repository = REPOSITORY;
+  const state = saved.state || { sites: [], enabled: false, profile: 'balanced', revision: 0 };
+  delete state.repository; // Migrate older installations; downloads never use user-supplied URLs.
   return { psl, state };
 })();
 let queue = Promise.resolve();
@@ -13,6 +15,7 @@ function serial(fn) { const task = queue.then(fn); queue = task.catch(() => {});
 let pendingSync = null;
 let syncAgain = false;
 let nativeState = null, nativeError = '';
+let nativeMissing = false;
 async function save(state) {
   state.revision++;
   await chrome.storage.local.set({ state });
@@ -28,9 +31,14 @@ async function sync() {
       try {
         const response = await chrome.runtime.sendNativeMessage(HOST, message);
         if (!response.ok) throw new Error(response.error);
-        nativeState = response; nativeError = '';
+        nativeState = response; nativeError = ''; nativeMissing = false;
         await chrome.action.setBadgeText({ text: response.running ? 'ON' : '' });
-      } catch (e) { nativeState = null; nativeError = e.message; await chrome.action.setBadgeText({ text: '!' }); }
+      } catch (e) {
+        nativeState = null; nativeError = e.message;
+        nativeMissing = /native messaging host.*not found|native host.*not found/i.test(e.message);
+        await chrome.action.setBadgeText({ text: '!' });
+        if (nativeMissing) await installer.ensure();
+      }
     } while (syncAgain);
   })();
   try { await pendingSync; } finally { pendingSync = null; }
@@ -69,7 +77,12 @@ let syncTimer = null;
 chrome.webRequest.onBeforeRequest.addListener(d => { void observe(d).catch(console.error); }, { urls: ['http://*/*', 'https://*/*'] });
 chrome.alarms.onAlarm.addListener(a => { if (a.name === 'sync') void sync(); });
 chrome.runtime.onStartup.addListener(() => { void sync(); });
-chrome.runtime.onInstalled.addListener(() => { void sync(); });
+chrome.runtime.onInstalled.addListener(() => {
+  void (async () => {
+    await sync();
+    if (nativeMissing) await chrome.tabs.create({ url: chrome.runtime.getURL('setup.html') });
+  })().catch(console.error);
+});
 chrome.runtime.onMessage.addListener((message, sender, reply) => {
   if (sender.id !== chrome.runtime.id) return;
   serial(async () => {
@@ -108,17 +121,19 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
       case 'profile':
         if (!['balanced', 'sequence', 'fragment'].includes(message.value)) throw new Error('Неизвестный профиль');
         state.profile = message.value; break;
-      case 'repository': {
-        const value = String(message.value || '').trim().replace(/\/$/, '').replace(/\.git$/, '');
-        if (value && !/^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(value)) throw new Error('Нужен адрес https://github.com/владелец/репозиторий');
-        state.repository = value; break;
+      case 'download': changed = false; await installer.ensure(true); break;
+      case 'showInstaller': {
+        changed = false;
+        const download = await installer.inspect();
+        if (!Number.isInteger(download.id)) throw new Error('Установщик ещё не скачан');
+        await chrome.downloads.show(download.id); break;
       }
       case 'sync': changed = false; break;
       default: throw new Error('Неизвестная команда');
     }
     if (changed) await save(state);
     await sync();
-    return { ok: true, state, domains: effectiveDomains(state.sites), nativeState, nativeError, seeds: SEEDS };
+    return { ok: true, state, domains: effectiveDomains(state.sites), nativeState, nativeError, nativeMissing, installer: await installer.inspect(), seeds: SEEDS };
   }).then(reply, e => reply({ ok: false, error: e.message }));
   return true;
 });

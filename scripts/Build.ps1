@@ -35,8 +35,10 @@ Get-ChildItem -LiteralPath $bundle -Recurse -File | Where-Object { $_.Name -ne '
 }
 $hashes | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $bundle 'checksums.json') -Encoding UTF8
 Compress-Archive -LiteralPath $bundle -DestinationPath (Join-Path $release 'GoodbyeDPI-Companion-Windows.zip') -Force
+& $compiler /nologo /target:winexe /platform:anycpu /codepage:65001 /optimize+ /warnaserror+ /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.IO.Compression.dll /r:System.IO.Compression.FileSystem.dll /r:System.Web.Extensions.dll "/resource:$(Join-Path $release 'GoodbyeDPI-Companion-Windows.zip'),Payload.zip" "/out:$(Join-Path $release 'GoodbyeDPI-Companion-Setup.exe')" (Join-Path $root 'native\Setup.cs')
+if ($LASTEXITCODE -ne 0) { throw 'Setup compilation failed' }
 Compress-Archive -LiteralPath (Join-Path $root 'extension') -DestinationPath (Join-Path $release 'GoodbyeDPI-Companion-Extension.zip') -Force
 $zips = @{}
-Get-ChildItem -LiteralPath $release -Filter '*.zip' | ForEach-Object { $zips[$_.Name] = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash }
+Get-ChildItem -LiteralPath $release -File | Where-Object { $_.Extension -in @('.zip', '.exe') } | ForEach-Object { $zips[$_.Name] = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash }
 $zips | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $release 'SHA256SUMS.json') -Encoding UTF8
-Write-Host 'Build finished. Upload the two ZIP files and SHA256SUMS.json to GitHub Releases.'
+Write-Host 'Build finished. Upload Setup.exe, both ZIP files and SHA256SUMS.json to GitHub Releases.'
