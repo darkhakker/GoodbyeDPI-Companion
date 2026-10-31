@@ -1,3 +1,19 @@
 # GoodbyeDPI Companion 0.1.5
 
-Chrome Web Store ID updated to aekknlficknemkbdbkfcmohdmdblbmhb. Native host and installer accept this exact store origin and the existing unpacked origin. Extension downloads the matching v0.1.5-preview.1 installer. Store package and reviewer instructions updated.
+Управление локальным GoodbyeDPI из Chrome для выбранных пользователем сайтов.
+
+## Установка
+
+1. Скачайте и запустите **GoodbyeDPI-Companion-Setup.exe**. Установка Windows-компонента потребует подтверждения прав администратора.
+2. Пока расширение проходит подготовку к публикации в Chrome Web Store, скачайте **GoodbyeDPI-Companion-Extension.zip**, распакуйте его и добавьте папку через «Загрузить распакованное расширение» на странице chrome://extensions с включённым режимом разработчика.
+3. Откройте расширение, подтвердите обработку данных и добавьте нужный сайт.
+
+**GoodbyeDPI-Companion-Windows.zip** — Windows-компонент для ручной установки через Install.cmd. **SHA256SUMS.json** — контрольные суммы файлов релиза.
+
+## Исправление этой сборки
+
+Windows-компонент настроен на текущую карточку Chrome Web Store: `aekknlficknemkbdbkfcmohdmdblbmhb`. Версия остаётся 0.1.5. Если компонент установлен ранее, повторно запустите обновлённый Setup.exe.
+
+Обработка применяется к выбранным доменам на уровне Windows. Расширение обнаруживает реально запрошенные ресурсы выбранных сайтов и сохраняет их локально. Работоспособность обхода зависит от сайта и провайдера; это не VPN.
+
+[Инструкция и исходный код](https://github.com/darkhakker/GoodbyeDPI-Companion) · [Конфиденциальность](https://github.com/darkhakker/GoodbyeDPI-Companion/blob/main/docs/PRIVACY.md)
