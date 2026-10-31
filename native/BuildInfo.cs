@@ -1,1 +1,1 @@
-namespace GoodbyeDPICompanion { internal static class BuildInfo { public const string ExtensionId = "abbnpgbcifoannnaioogjmnoooonhcoi"; } }
+namespace GoodbyeDPICompanion { internal static class BuildInfo { public const string ExtensionId = "abbnpgbcifoannnaioogjmnoooonhcoi"; public const string StoreExtensionId = "fodhcnbgkempfhhmolplgmgjaamcfbia"; public static bool IsAllowedOrigin(string origin) { return origin == "chrome-extension://" + ExtensionId + "/" || origin == "chrome-extension://" + StoreExtensionId + "/"; } } }

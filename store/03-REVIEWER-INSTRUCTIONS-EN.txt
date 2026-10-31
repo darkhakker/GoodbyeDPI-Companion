@@ -1,0 +1,36 @@
+Product: GoodbyeDPI Companion
+Chrome Web Store item ID: fodhcnbgkempfhhmolplgmgjaamcfbia
+Platform: Windows 10/11, .NET Framework 4.8. It is not functional as a DPI engine on macOS/Linux/ChromeOS.
+No login, paid account or credentials are required.
+
+Single purpose: control a user-selected domain list for a local GoodbyeDPI utility on Windows, including discovery of actual resource hostnames used by selected sites.
+
+REQUIRED NATIVE DEPENDENCY (not included in the extension ZIP)
+https://github.com/darkhakker/GoodbyeDPI-Companion/releases/tag/v0.1.5-preview.1
+Download GoodbyeDPI-Companion-Setup.exe. Public source code is available in the same repository (native/, installer/, scripts/).
+The extension is transparent about this dependency in the first-run notice and listing. After explicit first-run consent, it downloads the fixed installer when absent or outdated. The reviewer must run the EXE and approve Windows UAC; the extension cannot do this silently. No security warnings are bypassed.
+The installer creates a native messaging host and the GoodbyeDPICompanion Windows service. The runtime manifest permits only the exact store ID above and the fixed development ID abbnpgbcifoannnaioogjmnoooonhcoi. Other extension origins are rejected. Commands are limited to domain configuration, a fixed profile and enabled/disabled state. No arbitrary commands or paths are accepted.
+
+HOW TO TEST
+1. Install the extension from the review environment.
+2. Open its popup. Read the one-time disclosure and click Allow/Continue. Before this action no request observation or automatic installer download takes place.
+3. Run the downloaded Setup.exe and approve UAC. The project EXEs are currently unsigned; the underlying official GoodbyeDPI/WinDivert binaries and licenses are preserved. If your test environment blocks unsigned programs, consult the source or request clarification rather than bypassing its protection.
+4. Close any separate GoodbyeDPI instance before enabling this companion's engine; the app reports conflicts rather than stopping other copies silently.
+5. Open https://example.com. Open the popup: a card with the current hostname and an Add button appears at the top. Add it. The site remains in the list when the popup is reopened.
+6. Enable the engine. A running-process status is not a claim that any particular site is unblocked. Functionality depends on the local ISP and network protocols.
+7. Visit a selected site containing real external images/scripts/media. Open its Observed resources panel. Only actual HTTP/HTTPS request hostnames are learned, including delayed requests. There are no predefined CDN lists or hostname guessing. Existing parent coverage does not suppress exact observed names in the UI.
+8. Remove the site, or disable discovery / exclude a third-party resource. Domains outside the effective list are not included in GoodbyeDPI's hostname-based modification rules. WinDivert still technically intercepts matching TCP packets to inspect/reinject them; this distinction is disclosed.
+9. In Settings, revoke domain processing consent. Observation stops, ephemeral navigation hints are cleared, and the app requests engine shutdown. Re-consent is needed to resume.
+10. To uninstall the Windows component, run Uninstall.cmd from its installed or extracted folder. This removes the service and native host registration but leaves local diagnostic files; manual cleanup locations are documented in the privacy policy.
+
+DATA HANDLING
+The extension processes active-tab URLs transiently to extract hostnames and stores last navigation hostname per open tab in storage.session, not a URL history. Selected domains, observed resource hostnames and settings are in storage.local. Only the resulting domains/profile/enable state go to the local Windows host. No domains, browsing records, telemetry, analytics or user identifiers are uploaded to the developer. The native helper uses the current Windows SID locally for pipe/ACL access control and can keep local technical logs. GitHub receives normal HTTPS download requests for the fixed installer, not selected-site data.
+
+REMOTE CODE
+All extension JavaScript and the public suffix data are in the submitted package. No remote JavaScript/WASM is fetched or executed. The separately installed native companion is explicitly required and disclosed, not hidden as remote extension code.
+
+SCREENSHOTS
+Store images show the actual popup rendered by the shipped HTML/CSS/JavaScript with clearly marked demonstration data. They do not claim a successful bypass of any particular ISP or remote service.
+
+Privacy: https://github.com/darkhakker/GoodbyeDPI-Companion/blob/main/docs/PRIVACY.md
+Support: https://github.com/darkhakker/GoodbyeDPI-Companion/issues

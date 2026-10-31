@@ -6,6 +6,10 @@ function Write-InstallLog([string]$Message) {
     try { [IO.File]::AppendAllText($LogPath, ([DateTime]::UtcNow.ToString('o') + ' ' + $Message + [Environment]::NewLine), (New-Object Text.UTF8Encoding($false))) } catch { }
 }
 function Set-InstallStage([string]$Name) { $script:InstallStage = $Name; Write-InstallLog $Name }
+function Copy-ComponentFile([string]$Source, [string]$Destination) {
+    if ((Test-Path -LiteralPath $Destination -PathType Leaf) -and (Get-FileHash -LiteralPath $Source -Algorithm SHA256).Hash -eq (Get-FileHash -LiteralPath $Destination -Algorithm SHA256).Hash) { return }
+    Copy-Item -LiteralPath $Source -Destination $Destination -Force
+}
 Set-InstallStage 'Initializing installer'
 try {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -28,6 +32,8 @@ try {
     Set-InstallStage 'Verifying installation files'
     $id = (Get-Content -LiteralPath (Join-Path $PSScriptRoot 'extension-id.txt') -Raw).Trim()
     if ($id -notmatch '^[a-p]{32}$') { throw 'Invalid extension ID' }
+    $storeId = (Get-Content -LiteralPath (Join-Path $PSScriptRoot 'store-extension-id.txt') -Raw).Trim()
+    if ($storeId -notmatch '^[a-p]{32}$') { throw 'Invalid Web Store extension ID' }
     $hashes = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'checksums.json') -Raw | ConvertFrom-Json
     foreach ($property in $hashes.PSObject.Properties) {
         $file = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot $property.Name))
@@ -37,8 +43,9 @@ try {
     $companionInstallRoot = Join-Path $env:ProgramFiles 'GoodbyeDPICompanion'
     $data = Join-Path $env:ProgramData 'GoodbyeDPICompanion'
     $existing = Get-Service -Name GoodbyeDPICompanion -ErrorAction SilentlyContinue
-    if ($existing) { Stop-Service -Name GoodbyeDPICompanion -ErrorAction Stop; $existing.WaitForStatus('Stopped', [TimeSpan]::FromSeconds(20)) }
     if ((Test-Path -LiteralPath (Join-Path $companionInstallRoot 'owner.sid')) -and ((Get-Content -LiteralPath (Join-Path $companionInstallRoot 'owner.sid') -Raw).Trim() -ne $OwnerSid)) { throw 'Already installed for a different Windows account. Uninstall before changing the owner.' }
+    $serviceWasRunning = $existing -and $existing.Status -eq 'Running'
+    if ($existing -and $existing.Status -ne 'Stopped') { Stop-Service -Name GoodbyeDPICompanion -ErrorAction Stop; $existing.WaitForStatus('Stopped', [TimeSpan]::FromSeconds(20)) }
     Set-InstallStage 'Creating protected installation directories'
     New-Item -ItemType Directory -Path $companionInstallRoot, $data -Force | Out-Null
     # Protect privileged executables and service-written state from user replacement.
@@ -53,14 +60,21 @@ try {
         Set-Acl -LiteralPath $folder -AclObject $acl
     }
     Set-InstallStage 'Copying program and driver files'
-    foreach ($name in @('Companion.exe', 'public_suffix_list.dat', 'extension-id.txt', 'Uninstall.ps1', 'Uninstall.cmd', 'README.md', 'THIRD-PARTY.md', 'LICENSE', 'VALIDATION.md')) {
-        Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination $companionInstallRoot -Force
+    foreach ($name in @('Companion.exe', 'public_suffix_list.dat', 'extension-id.txt', 'store-extension-id.txt', 'Uninstall.ps1', 'Uninstall.cmd', 'README.md', 'THIRD-PARTY.md', 'LICENSE', 'VALIDATION.md', 'PRIVACY.md')) {
+        Copy-ComponentFile (Join-Path $PSScriptRoot $name) (Join-Path $companionInstallRoot $name)
     }
-    Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'engine') -Destination $companionInstallRoot -Recurse -Force
+    $sourceEngine = Join-Path $PSScriptRoot 'engine'
+    $targetEngine = Join-Path $companionInstallRoot 'engine'
+    foreach ($file in Get-ChildItem -LiteralPath $sourceEngine -Recurse -File) {
+        $relative = $file.FullName.Substring($sourceEngine.Length + 1)
+        $destination = Join-Path $targetEngine $relative
+        New-Item -ItemType Directory -Path (Split-Path $destination -Parent) -Force | Out-Null
+        Copy-ComponentFile $file.FullName $destination
+    }
     Set-Content -LiteralPath (Join-Path $companionInstallRoot 'owner.sid') -Value $OwnerSid -Encoding ASCII
     $hostManifest = @{
         name = 'org.goodbyedpi.companion'; description = 'GoodbyeDPI Companion'; type = 'stdio'
-        path = (Join-Path $companionInstallRoot 'Companion.exe'); allowed_origins = @("chrome-extension://$id/")
+        path = (Join-Path $companionInstallRoot 'Companion.exe'); allowed_origins = @("chrome-extension://$id/", "chrome-extension://$storeId/")
     }
     $manifest = Join-Path $companionInstallRoot 'native-host.json'
     [IO.File]::WriteAllText($manifest, ($hostManifest | ConvertTo-Json), (New-Object Text.UTF8Encoding($false)))
@@ -83,5 +97,8 @@ try {
 } catch {
     Write-InstallLog ('ERROR at stage: ' + $script:InstallStage + [Environment]::NewLine + ($_ | Format-List * -Force | Out-String))
     Write-Error $_ -ErrorAction Continue
+    if ($existing -and $serviceWasRunning) {
+        try { Start-Service -Name GoodbyeDPICompanion -ErrorAction Stop; Write-InstallLog 'Previous service restarted after failed update' } catch { Write-InstallLog ('Service recovery failed: ' + $_.Exception.Message) }
+    }
     exit 1
 }

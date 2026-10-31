@@ -1,6 +1,6 @@
-# GoodbyeDPI Companion — предварительная версия 0.1.4
+# GoodbyeDPI Companion — предварительная версия 0.1.5
 
-[Скачать расширение](https://github.com/darkhakker/GoodbyeDPI-Companion/releases/download/v0.1.4-preview.1/GoodbyeDPI-Companion-Extension.zip) · [Установщик Windows](https://github.com/darkhakker/GoodbyeDPI-Companion/releases/download/v0.1.4-preview.1/GoodbyeDPI-Companion-Setup.exe)
+[Скачать расширение](https://github.com/darkhakker/GoodbyeDPI-Companion/releases/download/v0.1.5-preview.1/GoodbyeDPI-Companion-Extension.zip) · [Установщик Windows](https://github.com/darkhakker/GoodbyeDPI-Companion/releases/download/v0.1.5-preview.1/GoodbyeDPI-Companion-Setup.exe)
 
 Это предварительная сборка; установка на чистой Windows и работа у конкретного провайдера ещё требуют проверки.
 
@@ -21,7 +21,8 @@
 1. Откройте `chrome://extensions` или `edge://extensions`, включите режим разработчика.
 2. Нажмите «Загрузить распакованное расширение» и выберите папку `extension`.
    Для скачанного `GoodbyeDPI-Companion-Extension.zip` сначала распакуйте архив.
-3. Если компонент Windows отсутствует, расширение автоматически скачает
+3. Прочтите уведомление первого запуска и нажмите «Разрешить и продолжить».
+   После этого, если компонент Windows отсутствует или устарел, расширение автоматически скачает
    `GoodbyeDPI-Companion-Setup.exe` и откроет страницу первого запуска.
    Откройте скачанный установщик и подтвердите запрос администратора Windows.
    Файлы распакуются автоматически; ссылки, драйверы и зависимости указывать не нужно.
@@ -81,7 +82,7 @@
 Весь этот каталог можно поместить в собственный Git-репозиторий. Личные списки доменов,
 история браузера и настройки с вашего компьютера в проект не включены.
 
-1. Создайте GitHub Release, `v0.1.4-preview.1` с отметкой Pre-release.
+1. Создайте GitHub Release, `v0.1.5-preview.1` с отметкой Pre-release.
 2. Прикрепите файлы из `release`:
    - `GoodbyeDPI-Companion-Extension.zip`;
    - `GoodbyeDPI-Companion-Setup.exe`;
@@ -106,7 +107,7 @@ host не считается отсутствующей установкой и 
 
 ## Значок и тема
 
-Иконка щита со стрелкой включена в размерах 16/32/48/128 px. Её SVG-исходник находится в extension/icons.
+Круглый знак канала с двумя дугами и точкой включён в размерах 16/32/48/128 px. Её SVG-исходник находится в extension/icons.
 Повторная генерация PNG: scripts/Build-Icons.ps1. Интерфейс использует CSS prefers-color-scheme
 и автоматически реагирует на светлую/тёмную настройку, которую сообщает браузер/система.
 Произвольные цветовые темы Chrome могут не менять этот сигнал; отдельного доступа к палитре темы нет.
@@ -118,7 +119,7 @@ host не считается отсутствующей установкой и 
 Node.js/Python/.NET SDK ставить не требуется. На Windows ARM эта версия не тестировалась.
 
 ```powershell
-node --test tests/domains.test.mjs tests/background.test.mjs tests/installation.test.mjs tests/popup.test.mjs tests/current-site.test.mjs tests/assets.test.mjs
+node --test tests/domains.test.mjs tests/background.test.mjs tests/installation.test.mjs tests/popup.test.mjs tests/current-site.test.mjs tests/assets.test.mjs tests/store.test.mjs
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/Build.ps1
 release/GoodbyeDPI-Companion-Windows/Companion.exe --self-test
 ```
@@ -172,6 +173,15 @@ Named pipe разрешает управление учётной записи, 
   другие программы; после перезагрузки неиспользуемый драйвер выгружается.
 - При ошибке установки запустите `Install.ps1` из PowerShell администратора, чтобы
   увидеть сообщение. При ошибке движка смотрите `%ProgramData%\GoodbyeDPICompanion\engine.log`.
+
+## Публикация в Chrome Web Store
+
+Карточка магазина: `fodhcnbgkempfhhmolplgmgjaamcfbia`.
+Сборка upload ZIP: `scripts/Build-Store.ps1`. В архиве manifest.json находится в корне, ключ распакованной версии удалён.
+Материалы карточки, изображения и инструкция: `store/00-START-PUBLICATION.md`.
+Политика конфиденциальности: [docs/PRIVACY.md](docs/PRIVACY.md).
+Нативный компонент принимает только точные ID магазинной и распакованной версий.
+До согласия наблюдение запросов и автоскачивание компонента отключены.
 
 ## Источники и лицензии
 

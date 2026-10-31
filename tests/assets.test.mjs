@@ -17,5 +17,5 @@ test('current-site Add card is above the status and the CSS declares light and d
   const css = readFileSync(new URL('../extension/popup.css', import.meta.url), 'utf8');
   assert.match(css, /prefers-color-scheme:dark/);
   assert.match(css, /color-scheme:light dark/);
-  assert.match(css, /--bg:#f7f9fc/); assert.match(css, /--bg:#101827/);
+  assert.match(css, /--bg:#fbf8f3/); assert.match(css, /--bg:#211b2b/);
 });

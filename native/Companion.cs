@@ -104,7 +104,7 @@ namespace GoodbyeDPICompanion {
             if (args.Length > 0 && args[0] == "--self-test") return SelfTest();
             Stream output = Console.OpenStandardOutput();
             try {
-                if (args.Length == 0 || args[0] != "chrome-extension://" + BuildInfo.ExtensionId + "/") throw new UnauthorizedAccessException("Unexpected extension origin");
+                if (args.Length == 0 || !BuildInfo.IsAllowedOrigin(args[0])) throw new UnauthorizedAccessException("Unexpected extension origin");
                 string input = Protocol.Read(Console.OpenStandardInput(), 0);
                 string sid = WindowsIdentity.GetCurrent().User.Value;
                 using (var pipe = new NamedPipeClientStream(".", PipeName(sid), PipeDirection.InOut, PipeOptions.Asynchronous, TokenImpersonationLevel.Impersonation)) {
@@ -121,6 +121,7 @@ namespace GoodbyeDPICompanion {
         private static int SelfTest() {
             try {
                 Policy.LoadSuffixes(Path.Combine(Home, "public_suffix_list.dat"));
+                if (!BuildInfo.IsAllowedOrigin("chrome-extension://" + BuildInfo.StoreExtensionId + "/") || !BuildInfo.IsAllowedOrigin("chrome-extension://" + BuildInfo.ExtensionId + "/") || BuildInfo.IsAllowedOrigin("chrome-extension://" + BuildInfo.StoreExtensionId + ".evil/")) throw new Exception("Origin allowlist failed");
                 if (!Policy.ValidDomain("tiktok.com") || Policy.ValidDomain("co.uk") || Policy.ValidDomain("com") || Policy.ValidDomain("bad.com --port 123") || Policy.ValidDomain("127.0.0.1")) throw new Exception("Domain policy failed");
                 var config = Policy.Validate("{\"command\":\"configure\",\"domains\":[\"tiktok.com\"],\"profile\":\"balanced\",\"enabled\":false}");
                 if (config.domains.Length != 1) throw new Exception("Config decode failed");
@@ -202,7 +203,7 @@ namespace GoodbyeDPICompanion {
                                 }
                                 if (settings.enabled && settings.domains.Length > 0 && !Running()) TryStart();
                                 if ((!settings.enabled || settings.domains.Length == 0) && Running()) StopEngine();
-                                result = new { ok = true, running = Running(), enabled = settings.enabled, profile = settings.profile, domainCount = settings.domains.Length, errorDetail = lastError, version = "0.1.2" };
+                                result = new { ok = true, running = Running(), enabled = settings.enabled, profile = settings.profile, domainCount = settings.domains.Length, errorDetail = lastError, version = "0.1.5" };
                             }
                         } catch (Exception e) { result = new { ok = false, error = e.Message }; }
                         Protocol.Write(pipe, result);

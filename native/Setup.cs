@@ -38,7 +38,7 @@ internal static class Setup {
         if (!files.TryGetValue(Prefix + "checksums.json", out manifest)) throw new InvalidDataException("Checksums missing");
         Dictionary<string, string> hashes;
         using (var reader = new StreamReader(manifest.Open())) { hashes = new JavaScriptSerializer().Deserialize<Dictionary<string, string>>(reader.ReadToEnd()); }
-        foreach (string required in new [] { "Install.ps1", "Companion.exe", "public_suffix_list.dat", "engine\\x86_64\\goodbyedpi.exe", "engine\\x86_64\\WinDivert64.sys", "engine\\x86\\goodbyedpi.exe", "engine\\x86\\WinDivert32.sys" }) {
+        foreach (string required in new [] { "Install.ps1", "Companion.exe", "public_suffix_list.dat", "store-extension-id.txt", "engine\\x86_64\\goodbyedpi.exe", "engine\\x86_64\\WinDivert64.sys", "engine\\x86\\goodbyedpi.exe", "engine\\x86\\WinDivert32.sys" }) {
             if (!hashes.ContainsKey(required)) throw new InvalidDataException("Required component missing: " + required);
         }
         foreach (var pair in hashes) {
@@ -74,6 +74,7 @@ internal static class Setup {
         private readonly ProgressBar progress = new ProgressBar();
         private readonly Button close = new Button();
         private readonly Button openLog = new Button();
+        private readonly Button storeButton = new Button();
         private readonly TextBox logText = new TextBox();
         private string logPath;
         private bool finished;
@@ -88,8 +89,10 @@ internal static class Setup {
             logText.SetBounds(24, 175, 572, 190); logText.Multiline = true; logText.ReadOnly = true; logText.ScrollBars = ScrollBars.Vertical; logText.Visible = false;
             openLog.SetBounds(24, 389, 160, 30); openLog.Text = "Открыть журнал"; openLog.Visible = false;
             openLog.Click += (s, e) => { if (File.Exists(logPath)) Process.Start(new ProcessStartInfo("notepad.exe", "\"" + logPath + "\"") { UseShellExecute = false }); };
+            storeButton.SetBounds(24, 389, 260, 30); storeButton.Text = "Страница расширения в Chrome"; storeButton.Visible = false;
+            storeButton.Click += (s, e) => Process.Start(new ProcessStartInfo("https://chromewebstore.google.com/detail/" + GoodbyeDPICompanion.BuildInfo.StoreExtensionId) { UseShellExecute = true });
             close.SetBounds(476, 389, 120, 30); close.Text = "Закрыть"; close.Enabled = false; close.Click += (s, e) => Close();
-            Controls.AddRange(new Control[] { title, detail, progress, logText, openLog, close });
+            Controls.AddRange(new Control[] { title, detail, progress, logText, openLog, storeButton, close });
             FormClosing += (s, e) => { if (!finished) e.Cancel = true; };
             Shown += (s, e) => ThreadPool.QueueUserWorkItem(_ => Install());
         }
@@ -112,6 +115,7 @@ internal static class Setup {
             BeginInvoke(new Action(() => {
                 finished = true; Succeeded = failure == null; progress.Style = ProgressBarStyle.Blocks; progress.Value = failure == null ? 100 : 0; close.Enabled = true;
                 title.Text = failure == null ? "Готово" : "Не удалось установить";
+                storeButton.Visible = failure == null;
                 detail.Text = failure == null ? "Компоненты установлены. Вернитесь в расширение, добавьте сайт и включите обход." : failure + " Подробности приведены ниже.";
                 if (failure != null) {
                     logText.Visible = true; openLog.Visible = File.Exists(logPath);

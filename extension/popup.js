@@ -2,11 +2,13 @@ import { installerText } from './setup-state.js';
 import { normalizeView } from './view-model.js';
 import { matches } from './domains.js';
 import { currentSite } from './current-site.js';
+import { PRIVACY_URL } from './config.js';
 const $ = id => document.getElementById(id);
 let view;
 const expandedSites = new Set();
 let candidate;
 async function updateSuggestion() {
+  if (!view.state.privacyAccepted) { candidate = null; $('suggestion').hidden = true; return; }
   try { candidate = await currentSite(chrome, view.state.sites); } catch { candidate = null; }
   $('suggestion').hidden = !candidate;
   $('suggestionDomain').textContent = candidate?.host || '';
@@ -24,6 +26,9 @@ function button(text, handler, className = '') {
 }
 function render() {
   const { state, nativeState: n } = view;
+  $('consent').hidden = state.privacyAccepted === true;
+  $('workspace').hidden = state.privacyAccepted !== true;
+  if (!state.privacyAccepted) return;
   $('status').textContent = n ? n.running ? 'Обход включён' : state.enabled && view.domains.length ? 'Движок не запущен' : 'Обход выключен' : 'Компонент Windows недоступен';
   $('detail').textContent = n?.errorDetail || '';
   $('detail').hidden = !$('detail').textContent;
@@ -80,6 +85,10 @@ $('profile').addEventListener('change', () => call('profile', { value: $('profil
 $('refresh').addEventListener('click', () => call('sync'));
 $('showInstaller').addEventListener('click', () => call('showInstaller'));
 $('retryDownload').addEventListener('click', () => call('download'));
+$('privacyLink').href = PRIVACY_URL;
+$('privacySettings').href = PRIVACY_URL;
+$('acceptConsent').addEventListener('click', () => call('consent'));
+$('revokeConsent').addEventListener('click', () => call('revokeConsent'));
 setInterval(() => { if (view && !view.nativeState) void call('view'); }, 2000);
 let refreshTimer;
 chrome.storage?.onChanged?.addListener((changes, area) => {

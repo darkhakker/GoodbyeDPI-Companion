@@ -19,13 +19,16 @@ jobs:
           node-version: '24'
           package-manager-cache: false
       - name: Domain and worker integration tests
-        run: node --test tests/domains.test.mjs tests/background.test.mjs tests/installation.test.mjs tests/popup.test.mjs tests/current-site.test.mjs tests/assets.test.mjs
+        run: node --test tests/domains.test.mjs tests/background.test.mjs tests/installation.test.mjs tests/popup.test.mjs tests/current-site.test.mjs tests/assets.test.mjs tests/store.test.mjs
       - name: Compile and bundle
         shell: powershell
         run: ./scripts/Build.ps1
       - name: Installer script contract
         shell: powershell
         run: ./tests/installer-contract.ps1
+      - name: Package store upload
+        shell: powershell
+        run: ./scripts/Build-Store.ps1
       - name: Native protocol and policy tests
         shell: powershell
         run: ./tests/native-protocol.ps1

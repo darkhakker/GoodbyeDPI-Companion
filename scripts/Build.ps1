@@ -28,10 +28,12 @@ if ($LASTEXITCODE -ne 0) { throw 'C# compilation failed' }
 foreach ($name in @('Install.ps1', 'Install.cmd', 'Uninstall.ps1', 'Uninstall.cmd')) { Copy-Item -LiteralPath (Join-Path $root "installer\$name") -Destination $bundle -Force }
 Copy-Item -LiteralPath (Join-Path $root 'extension\public_suffix_list.dat') -Destination $bundle -Force
 Copy-Item -LiteralPath (Join-Path $root 'extension-id.txt') -Destination $bundle -Force
+Copy-Item -LiteralPath (Join-Path $root 'store-extension-id.txt') -Destination $bundle -Force
 Copy-Item -LiteralPath (Join-Path $root 'README.md') -Destination $bundle -Force
 Copy-Item -LiteralPath (Join-Path $root 'THIRD-PARTY.md') -Destination $bundle -Force
 Copy-Item -LiteralPath (Join-Path $root 'LICENSE') -Destination $bundle -Force
 Copy-Item -LiteralPath (Join-Path $root 'VALIDATION.md') -Destination $bundle -Force
+Copy-Item -LiteralPath (Join-Path $root 'docs\PRIVACY.md') -Destination $bundle -Force
 Copy-Item -LiteralPath (Join-Path $root 'LICENSE') -Destination (Join-Path $root 'extension') -Force
 Copy-Item -LiteralPath (Join-Path $root 'THIRD-PARTY.md') -Destination (Join-Path $root 'extension') -Force
 $hashes = @{}
@@ -41,7 +43,7 @@ Get-ChildItem -LiteralPath $bundle -Recurse -File | Where-Object { $_.Name -ne '
 }
 $hashes | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $bundle 'checksums.json') -Encoding UTF8
 Compress-Archive -LiteralPath $bundle -DestinationPath (Join-Path $release 'GoodbyeDPI-Companion-Windows.zip') -Force
-& $compiler /nologo /target:winexe /platform:anycpu /codepage:65001 /optimize+ /warnaserror+ /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.IO.Compression.dll /r:System.IO.Compression.FileSystem.dll /r:System.Web.Extensions.dll "/resource:$(Join-Path $release 'GoodbyeDPI-Companion-Windows.zip'),Payload.zip" "/out:$(Join-Path $release 'GoodbyeDPI-Companion-Setup.exe')" (Join-Path $root 'native\Setup.cs')
+& $compiler /nologo /target:winexe /platform:anycpu /codepage:65001 /optimize+ /warnaserror+ /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.IO.Compression.dll /r:System.IO.Compression.FileSystem.dll /r:System.Web.Extensions.dll "/resource:$(Join-Path $release 'GoodbyeDPI-Companion-Windows.zip'),Payload.zip" "/out:$(Join-Path $release 'GoodbyeDPI-Companion-Setup.exe')" (Join-Path $root 'native\Setup.cs') (Join-Path $root 'native\BuildInfo.cs')
 if ($LASTEXITCODE -ne 0) { throw 'Setup compilation failed' }
 Compress-Archive -LiteralPath (Join-Path $root 'extension') -DestinationPath (Join-Path $release 'GoodbyeDPI-Companion-Extension.zip') -Force
 $zips = @{}

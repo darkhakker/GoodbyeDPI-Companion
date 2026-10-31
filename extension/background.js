@@ -1,5 +1,5 @@
 import { hostname, parsePSL, registrable, matches, effectiveDomains, learn } from './domains.js';
-import { RELEASE_TAG, SETUP_URL } from './config.js';
+import { RELEASE_TAG, SETUP_URL, MIN_NATIVE_VERSION } from './config.js';
 import { createInstaller } from './installation.js';
 import { navigationKey } from './current-site.js';
 const HOST = 'org.goodbyedpi.companion';
@@ -12,6 +12,7 @@ const ready = (async () => {
   const psl = parsePSL(await (await fetch(chrome.runtime.getURL('public_suffix_list.dat'))).text());
   const saved = await chrome.storage.local.get(['state']);
   const state = saved.state || { sites: [], enabled: false, profile: 'balanced', revision: 0 };
+  state.privacyAccepted = state.privacyAccepted === true;
   delete state.repository; // Migrate older installations; downloads never use user-supplied URLs.
   return { psl, state };
 })();
@@ -32,15 +33,21 @@ async function sync() {
     do {
       syncAgain = false;
       const { state } = await ready;
+      if (!state.privacyAccepted) {
+        nativeState = null; nativeError = ''; nativeMissing = false;
+        await chrome.action.setBadgeText({ text: '' });
+        continue;
+      }
       const message = { command: 'configure', domains: effectiveDomains(state.sites), enabled: state.enabled, profile: state.profile };
       try {
         const response = await chrome.runtime.sendNativeMessage(HOST, message);
         if (!response.ok) throw new Error(response.error);
+        if (!response.version || response.version.split('.').map(x => x.padStart(6, '0')).join('.') < MIN_NATIVE_VERSION.split('.').map(x => x.padStart(6, '0')).join('.')) throw new Error('Native component update required');
         nativeState = response; nativeError = ''; nativeMissing = false;
         await chrome.action.setBadgeText({ text: response.running ? 'ON' : '' });
       } catch (e) {
         nativeState = null; nativeError = e.message;
-        nativeMissing = /native messaging host.*not found|native host.*not found/i.test(e.message);
+        nativeMissing = /native messaging host.*not found|native host.*not found|native component update required|native messaging host.*forbidden|failed to start native messaging host/i.test(e.message);
         await chrome.action.setBadgeText({ text: '!' });
         if (nativeMissing) { try { await installer.ensure(); } catch (error) { console.error(error); } }
       }
@@ -50,7 +57,7 @@ async function sync() {
 }
 async function observe(details) {
   const { state, psl } = await ready;
-  if (!state.sites.length) return;
+  if (!state.privacyAccepted || !state.sites.length) return;
   let root, target;
   try {
     target = hostname(details.url);
@@ -89,7 +96,8 @@ async function observe(details) {
 let syncTimer = null;
 async function rememberNavigation(details, failed = false) {
   if (details.type !== 'main_frame' || details.tabId < 0 || !chrome.storage.session) return;
-  const { psl } = await ready;
+  const { psl, state } = await ready;
+  if (!state.privacyAccepted) return;
   try {
     const host = hostname(details.url); registrable(host, psl);
     // One hostname per currently open tab, in memory only. Never save page paths.
@@ -107,7 +115,8 @@ chrome.runtime.onStartup.addListener(() => { void sync(); });
 chrome.runtime.onInstalled.addListener(() => {
   void (async () => {
     await sync();
-    if (nativeMissing) await chrome.tabs.create({ url: chrome.runtime.getURL('setup.html') });
+    const { state } = await ready;
+    if (!state.privacyAccepted || nativeMissing) await chrome.tabs.create({ url: chrome.runtime.getURL('setup.html') });
   })().catch(console.error);
 });
 chrome.runtime.onMessage.addListener((message, sender, reply) => {
@@ -116,7 +125,12 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
     const { state, psl } = await ready;
     let changed = true;
     let shouldSync = true;
+    if (!state.privacyAccepted && !['view', 'snapshot', 'consent'].includes(message.action)) throw new Error('Сначала подтвердите первый запуск расширения.');
     switch (message.action) {
+      case 'consent': state.privacyAccepted = true; state.consentVersion = 1; break;
+      case 'revokeConsent':
+        state.enabled = false; await save(state); await sync();
+        state.privacyAccepted = false; await chrome.storage.session?.clear(); break;
       case 'view': changed = false; break;
       case 'snapshot': changed = false; shouldSync = false; break;
       case 'add': {

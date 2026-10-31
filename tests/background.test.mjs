@@ -7,14 +7,15 @@ test('worker: UI commands, scoped learning, exclusions, removal, host failure an
   const listeners = {}, sent = [], persisted = [];
   const navigationHints = {};
   const storage = { state: { sites: [], enabled: false, profile: 'balanced', revision: 0, repository: 'https://untrusted.invalid' } }, downloads = [];
-  let nativeMissing = false, serviceError = false;
+  let nativeMissing = false, serviceError = false, nativeVersion = '0.1.5';
   const tabs = new Map([[1,'https://www.example.com/page'],[2,'https://unselected.org/'],[3,'https://www.tiktok.com/'],[4,'https://second.org/']]);
   const event = name => ({ addListener(fn) { listeners[name] = fn; } });
   globalThis.chrome = {
     storage: { session: {
       get: async key => ({ [key]: navigationHints[key] }),
       set: async values => Object.assign(navigationHints, values),
-      remove: async key => { delete navigationHints[key]; }
+      remove: async key => { delete navigationHints[key]; },
+      clear: async () => { for (const key of Object.keys(navigationHints)) delete navigationHints[key]; }
     }, local: {
       get: async keys => Object.fromEntries((Array.isArray(keys) ? keys : [keys]).filter(x => x in storage).map(x => [x, structuredClone(storage[x])])),
       set: async value => { Object.assign(storage, structuredClone(value)); persisted.push(structuredClone(value)); }
@@ -27,7 +28,7 @@ test('worker: UI commands, scoped learning, exclusions, removal, host failure an
         sent.push(structuredClone(message));
         if (nativeMissing) throw new Error('Native messaging host not found');
         if (serviceError) return { ok: false, error: 'Local service is stopped' };
-        return { ok: true, running: message.enabled && message.domains.length > 0 };
+        return { ok: true, running: message.enabled && message.domains.length > 0, version: nativeVersion };
       }
     },
     action: { setBadgeText: async () => {} },
@@ -54,6 +55,13 @@ test('worker: UI commands, scoped learning, exclusions, removal, host failure an
     let result = await message('view');
     assert.deepEqual(result.domains, []);
     assert.equal(result.state.repository, undefined);
+    assert.equal(result.state.privacyAccepted, false);
+    assert.equal(sent.length, 0);
+    assert.equal(downloads.length, 0);
+    listeners.failedNavigation({ tabId: 9, url: 'https://before-consent.net/', type: 'main_frame' });
+    await pause(0); assert.deepEqual(navigationHints, {});
+    assert.equal((await message('add', { domain: 'example.com' })).ok, false);
+    await message('consent');
     listeners.failedNavigation({ tabId: 7, url: 'https://unavailable.net/private-path?secret=value', type: 'main_frame' });
     await pause(30);
     assert.deepEqual(navigationHints['navigation-hint:7'], { host: 'unavailable.net', failed: true });
@@ -91,7 +99,7 @@ test('worker: UI commands, scoped learning, exclusions, removal, host failure an
     assert(storage.state.sites.some(x => x.domain === 'tiktok.com'));
     assert.equal(downloads.length, 1);
     assert.equal(downloads[0].saveAs, false);
-    assert.match(downloads[0].url, /^https:\/\/github.com\/darkhakker\/GoodbyeDPI-Companion\/releases\/download\/v0.1.4-preview.1\/GoodbyeDPI-Companion-Setup.exe$/);
+    assert.match(downloads[0].url, /^https:\/\/github.com\/darkhakker\/GoodbyeDPI-Companion\/releases\/download\/v0.1.5-preview.1\/GoodbyeDPI-Companion-Setup.exe$/);
     await message('view'); await message('view');
     assert.equal(downloads.length, 1); // Popup polling must not download repeatedly.
     result = await message('repository', { value: 'https://untrusted.invalid' });
@@ -141,6 +149,23 @@ test('worker: UI commands, scoped learning, exclusions, removal, host failure an
     result = await message('add', { domain: 'tiktok.com' });
     assert.equal(result.state.sites.length, 1);
     assert.deepEqual(storage.state.sites.map(x => x.domain), ['tiktok.com']);
+    nativeVersion = '0.1.2';
+    result = await message('sync');
+    assert.equal(result.nativeMissing, true);
+    assert.match(result.nativeError, /update required/);
+    nativeVersion = '0.1.5';
+    result = await message('revokeConsent');
+    assert.equal(result.state.privacyAccepted, false);
+    assert.equal(storage.state.enabled, false);
+    assert.deepEqual(navigationHints, {});
+    const callsAfterRevoke = sent.length;
+    tabs.set(3, 'https://www.tiktok.com/');
+    listeners.request({ tabId: 3, url: 'https://must-not-record.net/x', type: 'image', initiator: 'https://www.tiktok.com' });
+    listeners.failedNavigation({ tabId: 3, url: 'https://must-not-record.net/x', type: 'main_frame' });
+    await pause(30);
+    assert(!storage.state.sites[0].learned['must-not-record.net']);
+    assert.deepEqual(navigationHints, {});
+    await message('view'); assert.equal(sent.length, callsAfterRevoke);
     assert.equal(listeners.message({ action: 'view' }, { id: 'other-extension' }, () => {}), undefined);
   } finally {
     globalThis.fetch = oldFetch;

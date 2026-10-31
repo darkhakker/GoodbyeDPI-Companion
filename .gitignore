@@ -2,5 +2,6 @@ release/
 *.log
 *.pdb
 node_modules/
+store/publication/
 .DS_Store
 Thumbs.db

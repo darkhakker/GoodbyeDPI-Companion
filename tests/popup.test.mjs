@@ -9,11 +9,11 @@ class Element {
   addEventListener(name, callback) { this.listeners[name] = callback; }
 }
 function documentFixture() {
-  const ids = ['error', 'status', 'detail', 'toggle', 'profile', 'installation', 'installStatus', 'downloadError', 'showInstaller', 'retryDownload', 'sites', 'empty', 'add', 'domain', 'suggestion', 'suggestionDomain', 'suggestionAdd', 'refresh'];
+  const ids = ['error', 'status', 'detail', 'toggle', 'profile', 'installation', 'installStatus', 'downloadError', 'showInstaller', 'retryDownload', 'sites', 'empty', 'add', 'domain', 'suggestion', 'suggestionDomain', 'suggestionAdd', 'refresh', 'consent', 'workspace', 'privacyLink', 'privacySettings', 'acceptConsent', 'revokeConsent'];
   const elements = Object.fromEntries(ids.map(id => [id, new Element()]));
   return { elements, getElementById: id => { if (!elements[id]) throw new Error(`Unexpected UI element: ${id}`); return elements[id]; }, createElement: tag => new Element(tag) };
 }
-const state = () => ({ enabled: true, profile: 'balanced', sites: [{ domain: 'tiktok.com', autoLearn: true, learned: {}, excluded: [] }] });
+const state = () => ({ enabled: true, profile: 'balanced', privacyAccepted: true, sites: [{ domain: 'tiktok.com', autoLearn: true, learned: {}, excluded: [] }] });
 test('popup renders legacy worker replies, adds domains and restores the list after reopening', async () => {
   const previous = { document: globalThis.document, chrome: globalThis.chrome, setInterval: globalThis.setInterval };
   const saved = state(); let failure = false;
