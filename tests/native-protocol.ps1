@@ -25,11 +25,16 @@ Write-Host 'Native origin rejection and binary framing passed'
 # Exercise real native-host stdio -> local pipe -> stdio, using a nonprivileged mock.
 $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
 $pipe = New-Object IO.Pipes.NamedPipeServerStream("GoodbyeDPICompanion-$sid", [IO.Pipes.PipeDirection]::InOut, 1, [IO.Pipes.PipeTransmissionMode]::Byte, [IO.Pipes.PipeOptions]::Asynchronous)
+$process = $null
+$originalInputEncoding = [Console]::InputEncoding
 try {
     $waiting = $pipe.BeginWaitForConnection($null, $null)
     $id = (Get-Content -LiteralPath (Join-Path $bundle 'extension-id.txt') -Raw).Trim()
     $start.Arguments = "chrome-extension://$id/"
     $start.RedirectStandardInput = $true
+    # Hosted runners may use UTF-8 with a BOM for Console.InputEncoding.
+    # StreamWriter.AutoFlush would prepend it before the binary frame otherwise.
+    [Console]::InputEncoding = New-Object Text.UTF8Encoding($false)
     $process = [Diagnostics.Process]::Start($start)
     $request = [Text.Encoding]::UTF8.GetBytes('{"command":"configure","domains":["tiktok.com"],"profile":"balanced","enabled":false}')
     $frame = [BitConverter]::GetBytes([int]$request.Length) + $request
@@ -75,6 +80,7 @@ try {
     Write-Host 'Native-host stdio / named-pipe round trip passed (no service installed)'
 } finally {
     $pipe.Dispose()
-    if ($process -and !$process.HasExited) { $process.Kill() }
+    if ($process) { try { if (!$process.HasExited) { $process.Kill() } } catch { } }
     if ($process) { $process.Dispose() }
+    [Console]::InputEncoding = $originalInputEncoding
 }
