@@ -1,10 +1,11 @@
 <!doctype html>
 <html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GoodbyeDPI Companion</title><link rel="stylesheet" href="popup.css">
-<body><header><span class="mark">G</span><h1>GoodbyeDPI Companion</h1><button id="refresh" title="Обновить">↻</button></header>
+<body><header><img class="mark" src="icons/icon32.png" width="32" height="32" alt=""><h1>GoodbyeDPI Companion</h1><button id="refresh" title="Обновить">↻</button></header>
+<section id="suggestion" class="suggestion" hidden><strong id="suggestionDomain"></strong><span>Добавить этот сайт?</span><button id="suggestionAdd">Добавить</button></section>
 <section class="status"><strong id="status">Подключение…</strong><p id="detail"></p><button id="toggle">Включить</button></section>
 <section id="installation" class="install" hidden><h2>Первый запуск</h2><p id="installStatus">Проверяем установку…</p><p>Откройте скачанный Setup.exe и подтвердите установку Windows.</p><div class="row"><button id="showInstaller">Показать файл</button><button id="retryDownload" class="remove">Скачать повторно</button></div><p id="downloadError" role="alert"></p></section>
-<form id="add"><label for="domain">Добавить сайт</label><div class="row"><input id="domain" placeholder="tiktok.com" aria-label="Домен сайта" required><button>Добавить</button></div><button type="button" id="current" class="text">Текущий сайт</button></form>
+<form id="add"><label for="domain">Добавить сайт</label><div class="row"><input id="domain" placeholder="tiktok.com" aria-label="Домен сайта" required><button>Добавить</button></div></form>
 <div id="sites"></div><p id="empty" hidden>Список пока пуст.</p>
 <details class="settings"><summary>Настройки</summary><label class="profile">Режим обхода<select id="profile"><option value="balanced">Основной</option><option value="sequence">Альтернативный</option><option value="fragment">Фрагментация</option></select></label></details>
 <p id="error" role="alert"></p><script type="module" src="popup.js"></script></body></html>

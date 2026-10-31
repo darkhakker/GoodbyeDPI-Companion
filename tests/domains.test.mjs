@@ -21,7 +21,8 @@ test('subdomains do not match lookalikes or suffix injection', () => {
 test('only requests from a selected site expand its domains', () => {
   const sites = [site()];
   assert(!learn(sites, 'unrelated.org', 'cdn.other.net'));
-  assert(!learn(sites, 'www.example.com', 'assets.example.com'));
+  assert(learn(sites, 'www.example.com', 'assets.example.com'));
+  assert(sites[0].learned['assets.example.com']);
   assert(learn(sites, 'www.example.com', 'assets.shared-cdn.net', 1));
   assert.deepEqual(effectiveDomains(sites), ['assets.shared-cdn.net', 'example.com']);
   assert(!effectiveDomains(sites).includes('shared-cdn.net'));
@@ -45,15 +46,21 @@ test('deleting a site deletes its resources unless another site also needs them'
   assert.deepEqual(effectiveDomains([two]), ['cdn.other.net', 'second.org']);
   assert.deepEqual(effectiveDomains([]), []);
 });
-test('TikTok seeds cover known companion domains without selecting TikTok by default', () => {
+test('TikTok starts without guessed CDN families and records each observed hostname exactly once', () => {
   assert.deepEqual(effectiveDomains([]), []);
-  const domains = effectiveDomains([{ ...site(), domain: 'tiktok.com' }]);
-  assert(domains.includes('tiktok.com')); assert(domains.includes('tiktokcdn.com'));
-  assert(!domains.includes('google.com'));
+  const sites = [{ ...site(), domain: 'tiktok.com' }];
+  assert.deepEqual(effectiveDomains(sites), ['tiktok.com']);
+  assert(learn(sites, 'www.tiktok.com', 'p19-common-sign.tiktokcdn.com', 1));
+  assert(!learn(sites, 'www.tiktok.com', 'p19-common-sign.tiktokcdn.com', 2));
+  assert.equal(sites[0].learned['p19-common-sign.tiktokcdn.com'].firstSeen, 1);
+  assert.deepEqual(effectiveDomains(sites), ['p19-common-sign.tiktokcdn.com', 'tiktok.com']);
+  assert(learn(sites, 'www.tiktok.com', 'tiktokcdn.com', 3));
+  assert.deepEqual(effectiveDomains(sites), ['tiktok.com', 'tiktokcdn.com']);
+  assert(sites[0].learned['p19-common-sign.tiktokcdn.com']);
 });
 test('growth is bounded and deterministic', () => {
   const s = site();
-  for (let i = 0; i < 205; i++) learn([s], 'example.com', `r${i}.other.net`);
-  assert.equal(Object.keys(s.learned).length, 200);
+  for (let i = 0; i < 1005; i++) learn([s], 'example.com', `r${i}.other.net`);
+  assert.equal(Object.keys(s.learned).length, 1000);
   assert.deepEqual(effectiveDomains([s]), effectiveDomains([s]).sort());
 });

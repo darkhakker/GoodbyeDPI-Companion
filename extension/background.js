@@ -1,6 +1,7 @@
-import { hostname, parsePSL, registrable, matches, SEEDS, effectiveDomains, learn } from './domains.js';
+import { hostname, parsePSL, registrable, matches, effectiveDomains, learn } from './domains.js';
 import { RELEASE_TAG, SETUP_URL } from './config.js';
 import { createInstaller } from './installation.js';
+import { navigationKey } from './current-site.js';
 const HOST = 'org.goodbyedpi.companion';
 const installer = createInstaller(chrome, RELEASE_TAG, SETUP_URL);
 async function installationView() {
@@ -48,29 +49,37 @@ async function sync() {
   try { await pendingSync; } finally { pendingSync = null; }
 }
 async function observe(details) {
-  if (details.tabId < 0) return;
   const { state, psl } = await ready;
   if (!state.sites.length) return;
-  let tab;
-  try { tab = await chrome.tabs.get(details.tabId); } catch { return; }
   let root, target;
   try {
-    root = hostname(tab.url || ''); target = hostname(details.url);
+    target = hostname(details.url);
     registrable(target, psl); // Never learn a public suffix as a global rule.
+    if (details.type === 'main_frame') {
+      const owner = state.sites.find(site => matches(target, site.domain));
+      if (!owner) return; // Never treat a navigation to an unrelated site as a resource.
+      root = owner.domain;
+    } else if (details.tabId >= 0) {
+      const tab = await chrome.tabs.get(details.tabId);
+      root = hostname(tab.url || '');
+    } else {
+      // Service-worker requests have no tabId. Attribute only a direct selected
+      // origin with an actually open tab; a shared CDN origin is ambiguous.
+      root = hostname(details.initiator || '');
+      const owner = state.sites.find(site => matches(root, site.domain));
+      if (!owner) return;
+      const tabs = await chrome.tabs.query({ url: [`*://*.${owner.domain}/*`, `*://${owner.domain}/*`] });
+      if (!tabs.length) return;
+    }
   } catch { return; }
-  // Only subresources of an explicitly tracked top-level page can expand a site.
-  // Exclude navigations to unrelated pages and opaque/background requests.
-  if (details.type === 'main_frame') return;
   const site = state.sites.find(x => matches(root, x.domain));
   if (!site) return;
-  if (details.initiator && details.initiator !== 'null') {
-    let initiator;
-    try { initiator = hostname(details.initiator); } catch { return; }
-    const related = [site.domain, ...(SEEDS[site.domain] || []), ...Object.keys(site.learned)];
-    if (!related.some(x => matches(initiator, x))) return;
-  } else return;
+  let initiator = null;
+  try { initiator = hostname(details.initiator || ''); } catch { }
+  // A tab-bound request is browser-observed evidence even for cross-origin or
+  // sandboxed frames. Do not require guessing its initiator's CDN family.
   await serial(async () => {
-    if (learn(state.sites, root, target)) {
+    if (learn(state.sites, root, target, Date.now(), { initiator, type: details.type, via: details.tabId >= 0 ? 'tab' : 'worker' })) {
       await save(state);
       // A short debounce avoids restarting the engine for each resource.
       if (!syncTimer) syncTimer = setTimeout(() => { syncTimer = null; void sync(); }, 4000);
@@ -78,7 +87,21 @@ async function observe(details) {
   });
 }
 let syncTimer = null;
-chrome.webRequest.onBeforeRequest.addListener(d => { void observe(d).catch(console.error); }, { urls: ['http://*/*', 'https://*/*'] });
+async function rememberNavigation(details, failed = false) {
+  if (details.type !== 'main_frame' || details.tabId < 0 || !chrome.storage.session) return;
+  const { psl } = await ready;
+  try {
+    const host = hostname(details.url); registrable(host, psl);
+    // One hostname per currently open tab, in memory only. Never save page paths.
+    await chrome.storage.session.set({ [navigationKey(details.tabId)]: { host, failed } });
+  } catch { }
+}
+chrome.webRequest.onBeforeRequest.addListener(d => {
+  void rememberNavigation(d);
+  void observe(d).catch(console.error);
+}, { urls: ['http://*/*', 'https://*/*'] });
+chrome.webRequest.onErrorOccurred?.addListener(d => { void rememberNavigation(d, true); }, { urls: ['http://*/*', 'https://*/*'] });
+chrome.tabs.onRemoved?.addListener(id => { void chrome.storage.session?.remove(navigationKey(id)); });
 chrome.alarms.onAlarm.addListener(a => { if (a.name === 'sync') void sync(); });
 chrome.runtime.onStartup.addListener(() => { void sync(); });
 chrome.runtime.onInstalled.addListener(() => {
@@ -92,8 +115,10 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
   serial(async () => {
     const { state, psl } = await ready;
     let changed = true;
+    let shouldSync = true;
     switch (message.action) {
       case 'view': changed = false; break;
+      case 'snapshot': changed = false; shouldSync = false; break;
       case 'add': {
         const domain = registrable(hostname(message.domain), psl);
         if (!state.sites.some(x => x.domain === domain)) {
@@ -138,8 +163,8 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
       default: throw new Error('Неизвестная команда');
     }
     if (changed) await save(state);
-    await sync();
-    return { ok: true, state, domains: effectiveDomains(state.sites), nativeState, nativeError, nativeMissing, installer: await installationView(), seeds: SEEDS };
+    if (shouldSync) await sync();
+    return { ok: true, state, domains: effectiveDomains(state.sites), nativeState, nativeError, nativeMissing, installer: await installationView(), seeds: {} };
   }).then(reply, e => reply({ ok: false, error: e.message }));
   return true;
 });

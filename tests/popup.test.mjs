@@ -9,7 +9,7 @@ class Element {
   addEventListener(name, callback) { this.listeners[name] = callback; }
 }
 function documentFixture() {
-  const ids = ['error', 'status', 'detail', 'toggle', 'profile', 'installation', 'installStatus', 'downloadError', 'showInstaller', 'retryDownload', 'sites', 'empty', 'add', 'domain', 'current', 'refresh'];
+  const ids = ['error', 'status', 'detail', 'toggle', 'profile', 'installation', 'installStatus', 'downloadError', 'showInstaller', 'retryDownload', 'sites', 'empty', 'add', 'domain', 'suggestion', 'suggestionDomain', 'suggestionAdd', 'refresh'];
   const elements = Object.fromEntries(ids.map(id => [id, new Element()]));
   return { elements, getElementById: id => { if (!elements[id]) throw new Error(`Unexpected UI element: ${id}`); return elements[id]; }, createElement: tag => new Element(tag) };
 }
@@ -17,17 +17,29 @@ const state = () => ({ enabled: true, profile: 'balanced', sites: [{ domain: 'ti
 test('popup renders legacy worker replies, adds domains and restores the list after reopening', async () => {
   const previous = { document: globalThis.document, chrome: globalThis.chrome, setInterval: globalThis.setInterval };
   const saved = state(); let failure = false;
+  let storageListener;
+  let activeTab = { id: 10, url: 'https://tiktok.com/' };
+  const session = {}, reloaded = [];
   const api = { runtime: { sendMessage: async message => {
     if (failure) return { ok: false, error: 'Временная ошибка связи' };
     if (message.action === 'add' && !saved.sites.some(s => s.domain === message.domain)) saved.sites.push({ domain: message.domain, autoLearn: true });
     return structuredClone({ ok: true, state: saved, domains: saved.sites.map(x => x.domain), nativeState: { running: true } });
-  } }, tabs: {} };
+  } }, tabs: { query: async () => [activeTab], reload: async id => reloaded.push(id) }, storage: {
+    onChanged: { addListener: listener => { storageListener = listener; } }, session: { get: async key => ({ [key]: session[key] }) }
+  } };
   try {
     globalThis.setInterval = () => 0;
     globalThis.chrome = api; globalThis.document = documentFixture();
     await import('../extension/popup.js?test=open'); await pause(0);
     let elements = globalThis.document.elements;
     assert.equal(elements.error.textContent, '');
+    const openResources = elements.sites.children[0].children[1]; openResources.open = true; openResources.listeners.toggle();
+    saved.sites[0].learned['p19-common-sign.tiktokcdn.com'] = { firstSeen: 1, source: 'tiktok.com' };
+    storageListener({ state: { newValue: saved } }, 'local');
+    await pause(200);
+    const updatedResources = elements.sites.children[0].children[1];
+    assert.equal(updatedResources.open, true);
+    assert.equal(updatedResources.children[2].children[0].children[0].textContent, 'p19-common-sign.tiktokcdn.com');
     assert.equal(elements.sites.children.length, 1);
     assert.equal(elements.sites.children[0].children[0].children[0].textContent, 'tiktok.com');
     assert.equal(elements.empty.hidden, true);
@@ -47,6 +59,16 @@ test('popup renders legacy worker replies, adds domains and restores the list af
     assert.equal(elements.sites.children.length, 2);
     assert.equal(elements.empty.hidden, true);
     assert.equal(elements.installation.hidden, true);
+    activeTab = { id: 11, url: 'chrome-error://chromewebdata/' };
+    session['navigation-hint:11'] = { host: 'failed-site.net', failed: true };
+    await elements.refresh.listeners.click();
+    assert.equal(elements.suggestion.hidden, false);
+    assert.equal(elements.suggestionDomain.textContent, 'failed-site.net');
+    await elements.suggestionAdd.listeners.click();
+    assert.equal(elements.sites.children.length, 3);
+    assert.equal(elements.suggestion.hidden, true);
+    assert(saved.sites.some(site => site.domain === 'failed-site.net'));
+    assert.deepEqual(reloaded, [11]);
   } finally { Object.assign(globalThis, previous); }
 });
 test('optional install metadata does not prevent saved domains from rendering', () => {
