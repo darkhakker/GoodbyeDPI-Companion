@@ -4,6 +4,12 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
 $release = Join-Path $root 'release'
 $bundle = Join-Path $release 'GoodbyeDPI-Companion-Windows'
+if (Test-Path -LiteralPath $bundle) {
+    $resolvedBundle = [IO.Path]::GetFullPath($bundle)
+    $expectedBundle = [IO.Path]::GetFullPath((Join-Path $root 'release\GoodbyeDPI-Companion-Windows'))
+    if ($resolvedBundle -ne $expectedBundle -or !$resolvedBundle.StartsWith([IO.Path]::GetFullPath($root).TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'Unsafe build staging path' }
+    Remove-Item -LiteralPath $resolvedBundle -Recurse -Force
+}
 New-Item -ItemType Directory -Path $release, $bundle, (Join-Path $bundle 'engine') -Force | Out-Null
 $archive = Join-Path $root 'vendor\goodbyedpi-0.2.3rc3-2.zip'
 $expected = '37F96B32D050DADCC930A639EBA68E1CCD57ED5C04A5F77DFCA908F01905A4C5'

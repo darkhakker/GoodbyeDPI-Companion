@@ -24,8 +24,7 @@ internal static class Setup {
             if (!created) { MessageBox.Show("Установщик уже запущен.", "GoodbyeDPI Companion"); return 0; }
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new SetupWindow());
-            return 0;
+            using (var window = new SetupWindow()) { Application.Run(window); return window.Succeeded ? 0 : 1; }
         }
     }
     private static ZipArchive OpenPayload() {
@@ -74,16 +73,23 @@ internal static class Setup {
         private readonly Label detail = new Label();
         private readonly ProgressBar progress = new ProgressBar();
         private readonly Button close = new Button();
+        private readonly Button openLog = new Button();
+        private readonly TextBox logText = new TextBox();
+        private string logPath;
         private bool finished;
+        public bool Succeeded { get; private set; }
         public SetupWindow() {
-            Text = "GoodbyeDPI Companion"; ClientSize = new Size(510, 250);
+            Text = "GoodbyeDPI Companion"; ClientSize = new Size(620, 430);
             StartPosition = FormStartPosition.CenterScreen; FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false; MinimizeBox = false;
-            title.SetBounds(24, 24, 462, 35); title.Font = new Font("Segoe UI", 15, FontStyle.Bold); title.Text = "Установка компонентов";
-            detail.SetBounds(24, 70, 462, 80); detail.Font = new Font("Segoe UI", 10); detail.Text = "Подготавливаем файлы. Подтвердите запрос администратора Windows, когда он появится.";
-            progress.SetBounds(24, 158, 462, 18); progress.Style = ProgressBarStyle.Marquee;
-            close.SetBounds(366, 198, 120, 30); close.Text = "Закрыть"; close.Enabled = false; close.Click += (s, e) => Close();
-            Controls.AddRange(new Control[] { title, detail, progress, close });
+            title.SetBounds(24, 24, 572, 35); title.Font = new Font("Segoe UI", 15, FontStyle.Bold); title.Text = "Установка компонентов";
+            detail.SetBounds(24, 70, 572, 65); detail.Font = new Font("Segoe UI", 10); detail.Text = "Подготавливаем файлы. Подтвердите запрос администратора Windows, когда он появится.";
+            progress.SetBounds(24, 145, 572, 18); progress.Style = ProgressBarStyle.Marquee;
+            logText.SetBounds(24, 175, 572, 190); logText.Multiline = true; logText.ReadOnly = true; logText.ScrollBars = ScrollBars.Vertical; logText.Visible = false;
+            openLog.SetBounds(24, 389, 160, 30); openLog.Text = "Открыть журнал"; openLog.Visible = false;
+            openLog.Click += (s, e) => { if (File.Exists(logPath)) Process.Start(new ProcessStartInfo("notepad.exe", "\"" + logPath + "\"") { UseShellExecute = false }); };
+            close.SetBounds(476, 389, 120, 30); close.Text = "Закрыть"; close.Enabled = false; close.Click += (s, e) => Close();
+            Controls.AddRange(new Control[] { title, detail, progress, logText, openLog, close });
             FormClosing += (s, e) => { if (!finished) e.Cancel = true; };
             Shown += (s, e) => ThreadPool.QueueUserWorkItem(_ => Install());
         }
@@ -91,8 +97,9 @@ internal static class Setup {
             string folder = null, failure = null;
             try {
                 folder = Extract();
+                logPath = Path.Combine(folder, "install.log");
                 string script = Path.Combine(folder, "Install.ps1").Replace("'", "''");
-                string command = "& '" + script + "'";
+                string command = "& '" + script + "' -LogPath '" + logPath.Replace("'", "''") + "'";
                 string encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(command));
                 var start = new ProcessStartInfo("powershell.exe", "-NoProfile -ExecutionPolicy Bypass -EncodedCommand " + encoded) {
                     UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = folder
@@ -103,9 +110,13 @@ internal static class Setup {
                 }
             } catch (Exception e) { failure = e.Message; }
             BeginInvoke(new Action(() => {
-                finished = true; progress.Style = ProgressBarStyle.Blocks; progress.Value = failure == null ? 100 : 0; close.Enabled = true;
+                finished = true; Succeeded = failure == null; progress.Style = ProgressBarStyle.Blocks; progress.Value = failure == null ? 100 : 0; close.Enabled = true;
                 title.Text = failure == null ? "Готово" : "Не удалось установить";
-                detail.Text = failure == null ? "Компоненты установлены. Вернитесь в расширение, добавьте сайт и включите обход." : failure + (folder == null ? "" : " Для диагностики запустите Install.cmd из: " + folder);
+                detail.Text = failure == null ? "Компоненты установлены. Вернитесь в расширение, добавьте сайт и включите обход." : failure + " Подробности приведены ниже.";
+                if (failure != null) {
+                    logText.Visible = true; openLog.Visible = File.Exists(logPath);
+                    try { logText.Text = File.Exists(logPath) ? File.ReadAllText(logPath) : failure; } catch { logText.Text = failure; }
+                }
             }));
         }
     }

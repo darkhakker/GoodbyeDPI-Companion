@@ -23,6 +23,9 @@ jobs:
       - name: Compile and bundle
         shell: powershell
         run: ./scripts/Build.ps1
+      - name: Installer script contract
+        shell: powershell
+        run: ./tests/installer-contract.ps1
       - name: Native protocol and policy tests
         shell: powershell
         run: ./tests/native-protocol.ps1

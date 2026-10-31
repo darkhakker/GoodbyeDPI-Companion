@@ -8,7 +8,7 @@ if (existsSync(path)) key = JSON.parse(readFileSync(path, 'utf8')).key;
 if (!key) key = generateKeyPairSync('rsa', { modulusLength: 2048 }).publicKey.export({ type: 'spki', format: 'der' }).toString('base64');
 const id = [...createHash('sha256').update(Buffer.from(key, 'base64')).digest().subarray(0, 16)].map(x => String.fromCharCode(97 + (x >> 4), 97 + (x & 15))).join('');
 const manifest = {
-  manifest_version: 3, name: 'GoodbyeDPI Companion', version: '0.1.1', minimum_chrome_version: '120',
+  manifest_version: 3, name: 'GoodbyeDPI Companion', version: '0.1.2', minimum_chrome_version: '120',
   description: 'Управление GoodbyeDPI для выбранных сайтов с локальным обнаружением ресурсов.',
   key, permissions: ['storage', 'nativeMessaging', 'webRequest', 'tabs', 'alarms', 'downloads'],
   host_permissions: ['http://*/*', 'https://*/*'],

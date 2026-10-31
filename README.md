@@ -1,6 +1,6 @@
-# GoodbyeDPI Companion — предварительная версия 0.1.1
+# GoodbyeDPI Companion — предварительная версия 0.1.2
 
-[Скачать расширение](https://github.com/darkhakker/GoodbyeDPI-Companion/releases/download/v0.1.1-preview.1/GoodbyeDPI-Companion-Extension.zip) · [Установщик Windows](https://github.com/darkhakker/GoodbyeDPI-Companion/releases/download/v0.1.1-preview.1/GoodbyeDPI-Companion-Setup.exe)
+[Скачать расширение](https://github.com/darkhakker/GoodbyeDPI-Companion/releases/download/v0.1.2-preview.1/GoodbyeDPI-Companion-Extension.zip) · [Установщик Windows](https://github.com/darkhakker/GoodbyeDPI-Companion/releases/download/v0.1.2-preview.1/GoodbyeDPI-Companion-Setup.exe)
 
 Это предварительная сборка; установка на чистой Windows и работа у конкретного провайдера ещё требуют проверки.
 
@@ -69,7 +69,7 @@
 Весь этот каталог можно поместить в собственный Git-репозиторий. Личные списки доменов,
 история браузера и настройки с вашего компьютера в проект не включены.
 
-1. Создайте GitHub Release, `v0.1.1-preview.1` с отметкой Pre-release.
+1. Создайте GitHub Release, `v0.1.2-preview.1` с отметкой Pre-release.
 2. Прикрепите файлы из `release`:
    - `GoodbyeDPI-Companion-Extension.zip`;
    - `GoodbyeDPI-Companion-Setup.exe`;

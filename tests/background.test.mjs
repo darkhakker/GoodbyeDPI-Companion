@@ -75,7 +75,7 @@ test('worker: UI commands, scoped learning, exclusions, removal, host failure an
     assert(storage.state.sites.some(x => x.domain === 'tiktok.com'));
     assert.equal(downloads.length, 1);
     assert.equal(downloads[0].saveAs, false);
-    assert.match(downloads[0].url, /^https:\/\/github.com\/darkhakker\/GoodbyeDPI-Companion\/releases\/download\/v0.1.1-preview.1\/GoodbyeDPI-Companion-Setup.exe$/);
+    assert.match(downloads[0].url, /^https:\/\/github.com\/darkhakker\/GoodbyeDPI-Companion\/releases\/download\/v0.1.2-preview.1\/GoodbyeDPI-Companion-Setup.exe$/);
     await message('view'); await message('view');
     assert.equal(downloads.length, 1); // Popup polling must not download repeatedly.
     result = await message('repository', { value: 'https://untrusted.invalid' });
