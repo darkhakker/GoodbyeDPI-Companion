@@ -1,12 +1,10 @@
 <!doctype html>
 <html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GoodbyeDPI Companion</title><link rel="stylesheet" href="popup.css">
-<body><header><span class="mark">G</span><div><h1>GoodbyeDPI</h1><p>Сайты под вашим контролем</p></div><button id="refresh" title="Обновить">↻</button></header>
+<body><header><span class="mark">G</span><h1>GoodbyeDPI Companion</h1><button id="refresh" title="Обновить">↻</button></header>
 <section class="status"><strong id="status">Подключение…</strong><p id="detail"></p><button id="toggle">Включить</button></section>
-<section id="installation" class="install"><h2>Компоненты Windows</h2><p id="installStatus">Проверяем установку…</p><p>После скачивания откройте <strong>GoodbyeDPI-Companion-Setup.exe</strong> и подтвердите запрос Windows. Распаковывать архивы и вводить ссылки не нужно.</p><div class="row"><button id="showInstaller">Показать установщик</button><button id="retryDownload" class="remove">Скачать повторно</button></div><p id="downloadError" role="alert"></p></section>
-<label class="profile">Режим обхода<select id="profile"><option value="balanced">Смешанные поддельные пакеты</option><option value="sequence">Поддельные номера TCP</option><option value="fragment">Только фрагментация</option></select></label>
-<form id="add"><label for="domain">Добавить сайт и все его поддомены</label><div class="row"><input id="domain" placeholder="tiktok.com" required><button>Добавить</button></div><button type="button" id="current" class="text">Добавить текущий сайт</button></form>
-<p class="hint">Ресурсы добавленного сайта обнаруживаются автоматически при посещении. Для новых зависимостей может потребоваться обновить страницу.</p>
-<div id="sites"></div><p id="empty">Добавьте первый сайт. Остальные домены не включаются в обход.</p>
-<details><summary>О расширении</summary><p>Компоненты автоматически скачиваются из официального репозитория проекта. Установка в Windows требует вашего подтверждения.</p><p id="extensionId"></p></details>
-<footer>Обход действует на выбранные домены во всей Windows. Общий CDN может использоваться другими сайтами. DNS и QUIC глобально не меняются.</footer><p id="error" role="alert"></p><script type="module" src="popup.js"></script></body></html>
+<section id="installation" class="install" hidden><h2>Первый запуск</h2><p id="installStatus">Проверяем установку…</p><p>Откройте скачанный Setup.exe и подтвердите установку Windows.</p><div class="row"><button id="showInstaller">Показать файл</button><button id="retryDownload" class="remove">Скачать повторно</button></div><p id="downloadError" role="alert"></p></section>
+<form id="add"><label for="domain">Добавить сайт</label><div class="row"><input id="domain" placeholder="tiktok.com" aria-label="Домен сайта" required><button>Добавить</button></div><button type="button" id="current" class="text">Текущий сайт</button></form>
+<div id="sites"></div><p id="empty" hidden>Список пока пуст.</p>
+<details class="settings"><summary>Настройки</summary><label class="profile">Режим обхода<select id="profile"><option value="balanced">Основной</option><option value="sequence">Альтернативный</option><option value="fragment">Фрагментация</option></select></label></details>
+<p id="error" role="alert"></p><script type="module" src="popup.js"></script></body></html>

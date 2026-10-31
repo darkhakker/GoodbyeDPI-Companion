@@ -3,6 +3,10 @@ import { RELEASE_TAG, SETUP_URL } from './config.js';
 import { createInstaller } from './installation.js';
 const HOST = 'org.goodbyedpi.companion';
 const installer = createInstaller(chrome, RELEASE_TAG, SETUP_URL);
+async function installationView() {
+  try { return await installer.inspect(); }
+  catch (error) { return { state: 'interrupted', error: error.message }; }
+}
 const ready = (async () => {
   const psl = parsePSL(await (await fetch(chrome.runtime.getURL('public_suffix_list.dat'))).text());
   const saved = await chrome.storage.local.get(['state']);
@@ -37,7 +41,7 @@ async function sync() {
         nativeState = null; nativeError = e.message;
         nativeMissing = /native messaging host.*not found|native host.*not found/i.test(e.message);
         await chrome.action.setBadgeText({ text: '!' });
-        if (nativeMissing) await installer.ensure();
+        if (nativeMissing) { try { await installer.ensure(); } catch (error) { console.error(error); } }
       }
     } while (syncAgain);
   })();
@@ -92,8 +96,10 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
       case 'view': changed = false; break;
       case 'add': {
         const domain = registrable(hostname(message.domain), psl);
-        if (state.sites.length >= 100) throw new Error('Лимит: 100 сайтов');
-        if (!state.sites.some(x => x.domain === domain)) state.sites.push({ domain, autoLearn: true, learned: {}, excluded: [] });
+        if (!state.sites.some(x => x.domain === domain)) {
+          if (state.sites.length >= 100) throw new Error('Лимит: 100 сайтов');
+          state.sites.push({ domain, autoLearn: true, learned: {}, excluded: [] });
+        }
         break;
       }
       case 'remove': state.sites = state.sites.filter(x => x.domain !== message.domain); break;
@@ -133,7 +139,7 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
     }
     if (changed) await save(state);
     await sync();
-    return { ok: true, state, domains: effectiveDomains(state.sites), nativeState, nativeError, nativeMissing, installer: await installer.inspect(), seeds: SEEDS };
+    return { ok: true, state, domains: effectiveDomains(state.sites), nativeState, nativeError, nativeMissing, installer: await installationView(), seeds: SEEDS };
   }).then(reply, e => reply({ ok: false, error: e.message }));
   return true;
 });

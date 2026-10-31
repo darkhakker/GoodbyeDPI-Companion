@@ -1,6 +1,6 @@
-# GoodbyeDPI Companion — предварительная версия 0.1.2
+# GoodbyeDPI Companion — предварительная версия 0.1.3
 
-[Скачать расширение](https://github.com/darkhakker/GoodbyeDPI-Companion/releases/download/v0.1.2-preview.1/GoodbyeDPI-Companion-Extension.zip) · [Установщик Windows](https://github.com/darkhakker/GoodbyeDPI-Companion/releases/download/v0.1.2-preview.1/GoodbyeDPI-Companion-Setup.exe)
+[Скачать расширение](https://github.com/darkhakker/GoodbyeDPI-Companion/releases/download/v0.1.3-preview.1/GoodbyeDPI-Companion-Extension.zip) · [Установщик Windows](https://github.com/darkhakker/GoodbyeDPI-Companion/releases/download/v0.1.3-preview.1/GoodbyeDPI-Companion-Setup.exe)
 
 Это предварительная сборка; установка на чистой Windows и работа у конкретного провайдера ещё требуют проверки.
 
@@ -20,6 +20,8 @@
 4. Откройте расширение, нажмите ↻. Добавьте `tiktok.com` или другой сайт.
 5. Остановите старую службу GoodbyeDPI и обычный START-restored.cmd, если они работают.
    Новая программа не останавливает их самостоятельно, а сообщает о конфликте.
+Режим обхода находится в раскрывающихся «Настройках». Ресурсы сайта спрятаны в его карточке.
+
 6. Нажмите «Включить». Посетите сайт, подождите несколько секунд и обновите страницу:
    новые сторонние ресурсы добавляются автоматически и применяются с задержкой.
 
@@ -69,7 +71,7 @@
 Весь этот каталог можно поместить в собственный Git-репозиторий. Личные списки доменов,
 история браузера и настройки с вашего компьютера в проект не включены.
 
-1. Создайте GitHub Release, `v0.1.2-preview.1` с отметкой Pre-release.
+1. Создайте GitHub Release, `v0.1.3-preview.1` с отметкой Pre-release.
 2. Прикрепите файлы из `release`:
    - `GoodbyeDPI-Companion-Extension.zip`;
    - `GoodbyeDPI-Companion-Setup.exe`;
@@ -99,7 +101,7 @@ host не считается отсутствующей установкой и 
 Node.js/Python/.NET SDK ставить не требуется. На Windows ARM эта версия не тестировалась.
 
 ```powershell
-node --test tests/domains.test.mjs tests/background.test.mjs tests/installation.test.mjs
+node --test tests/domains.test.mjs tests/background.test.mjs tests/installation.test.mjs tests/popup.test.mjs
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/Build.ps1
 release/GoodbyeDPI-Companion-Windows/Companion.exe --self-test
 ```

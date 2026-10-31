@@ -23,6 +23,11 @@ $process.Dispose()
 Write-Host 'Native origin rejection and binary framing passed'
 
 # Exercise real native-host stdio -> local pipe -> stdio, using a nonprivileged mock.
+$installedService = Get-Service -Name GoodbyeDPICompanion -ErrorAction SilentlyContinue
+if ($installedService -and $installedService.Status -eq 'Running') {
+    Write-Host 'Real companion service is running; mock pipe test skipped to avoid interfering with it. CI runs this test on a clean runner.'
+    exit 0
+}
 $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
 $pipe = New-Object IO.Pipes.NamedPipeServerStream("GoodbyeDPICompanion-$sid", [IO.Pipes.PipeDirection]::InOut, 1, [IO.Pipes.PipeTransmissionMode]::Byte, [IO.Pipes.PipeOptions]::Asynchronous)
 $process = $null

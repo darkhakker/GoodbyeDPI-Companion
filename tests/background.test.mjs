@@ -75,7 +75,7 @@ test('worker: UI commands, scoped learning, exclusions, removal, host failure an
     assert(storage.state.sites.some(x => x.domain === 'tiktok.com'));
     assert.equal(downloads.length, 1);
     assert.equal(downloads[0].saveAs, false);
-    assert.match(downloads[0].url, /^https:\/\/github.com\/darkhakker\/GoodbyeDPI-Companion\/releases\/download\/v0.1.2-preview.1\/GoodbyeDPI-Companion-Setup.exe$/);
+    assert.match(downloads[0].url, /^https:\/\/github.com\/darkhakker\/GoodbyeDPI-Companion\/releases\/download\/v0.1.3-preview.1\/GoodbyeDPI-Companion-Setup.exe$/);
     await message('view'); await message('view');
     assert.equal(downloads.length, 1); // Popup polling must not download repeatedly.
     result = await message('repository', { value: 'https://untrusted.invalid' });
@@ -86,6 +86,12 @@ test('worker: UI commands, scoped learning, exclusions, removal, host failure an
     assert(sent.at(-1).domains.includes('tiktokcdn.com'));
     result = await message('add', { domain: 'com' });
     assert.equal(result.ok, false);
+    await import('../extension/background.js?test=worker-restart');
+    result = await message('view');
+    assert.deepEqual(result.state.sites.map(x => x.domain), ['tiktok.com']);
+    result = await message('add', { domain: 'tiktok.com' });
+    assert.equal(result.state.sites.length, 1);
+    assert.deepEqual(storage.state.sites.map(x => x.domain), ['tiktok.com']);
     assert.equal(listeners.message({ action: 'view' }, { id: 'other-extension' }, () => {}), undefined);
   } finally {
     globalThis.fetch = oldFetch;

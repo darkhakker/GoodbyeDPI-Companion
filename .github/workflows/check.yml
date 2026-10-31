@@ -19,7 +19,7 @@ jobs:
           node-version: '24'
           package-manager-cache: false
       - name: Domain and worker integration tests
-        run: node --test tests/domains.test.mjs tests/background.test.mjs tests/installation.test.mjs
+        run: node --test tests/domains.test.mjs tests/background.test.mjs tests/installation.test.mjs tests/popup.test.mjs
       - name: Compile and bundle
         shell: powershell
         run: ./scripts/Build.ps1

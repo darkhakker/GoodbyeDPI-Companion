@@ -4,11 +4,14 @@
 
 Подтверждено:
 
+- Проверен popup со старым форматом ответа worker без installer: добавление, отображение и повторное открытие списка.
+- Перезапуск фонового worker восстанавливает список из storage.local; повторное добавление не создаёт дубликат.
+
 - Исправленный Install.ps1 завершил реальную установку с UAC с кодом 0 на компьютере пользователя.
 - В Windows PowerShell 5.1 проходит проверка синтаксиса и защищённых системных переменных установщика.
 
 - C# скомпилирован встроенным компилятором .NET Framework, с предупреждениями как ошибками.
-- 16 тестов Node.js прошли: автоскачивание, защита от дубликатов и повторов после ошибок,
+- 19 тестов Node.js прошли: автоскачивание, защита от дубликатов и повторов после ошибок,
   восстановление после перезапуска worker, миграция старого URL, состояние установки,
   нормализация доменов и IDN, Public Suffix List/PRIVATE,
   защита от доменов-двойников, изоляция выбранного сайта, исключения, удаление,
@@ -39,7 +42,7 @@
 Воспроизведение:
 
 ```powershell
-node --test tests/domains.test.mjs tests/background.test.mjs tests/installation.test.mjs
+node --test tests/domains.test.mjs tests/background.test.mjs tests/installation.test.mjs tests/popup.test.mjs
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/Build.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/native-protocol.ps1
 ```

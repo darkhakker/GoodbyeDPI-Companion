@@ -1,4 +1,4 @@
-GoodbyeDPI Companion 0.1.2 — предварительная версия
+GoodbyeDPI Companion 0.1.3 — предварительная версия
 
 1. Откройте chrome://extensions или edge://extensions.
 2. Загрузите распакованную папку extension (или нажмите «Обновить» у уже установленного расширения).
@@ -7,7 +7,7 @@ GoodbyeDPI Companion 0.1.2 — предварительная версия
 5. Всё распакуется и установится автоматически. Вернитесь в расширение, добавьте сайт и включите обход.
 
 Ссылку на репозиторий вводить больше не нужно. Компоненты скачиваются только из
-https://github.com/darkhakker/GoodbyeDPI-Companion — релиз v0.1.2-preview.1.
+https://github.com/darkhakker/GoodbyeDPI-Companion — релиз v0.1.3-preview.1.
 Браузер не может сам запустить скачанный EXE или подтвердить UAC вместо пользователя.
 
 Для GitHub Releases: Setup.exe, Extension.zip, Windows.zip и SHA256SUMS.json из release.

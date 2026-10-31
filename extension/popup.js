@@ -1,11 +1,11 @@
 import { installerText } from './setup-state.js';
+import { normalizeView } from './view-model.js';
 const $ = id => document.getElementById(id);
 let view;
 async function call(action, data = {}) {
   $('error').textContent = '';
   try {
-    const result = await chrome.runtime.sendMessage({ action, ...data });
-    if (!result?.ok) throw new Error(result?.error || 'Нет ответа расширения');
+    const result = normalizeView(await chrome.runtime.sendMessage({ action, ...data }));
     view = result; render(); return result;
   } catch (e) { $('error').textContent = e.message; }
 }
@@ -14,9 +14,10 @@ function button(text, handler, className = '') {
   el.addEventListener('click', handler); return el;
 }
 function render() {
-  const { state, nativeState: n, nativeError, seeds } = view;
+  const { state, nativeState: n, seeds } = view;
   $('status').textContent = n ? n.running ? 'Обход включён' : state.enabled && view.domains.length ? 'Движок не запущен' : 'Обход выключен' : 'Компонент Windows недоступен';
-  $('detail').textContent = n ? n.errorDetail || `${view.domains.length} доменов в списке · поддомены включены` : view.nativeMissing ? 'Загружаем компоненты для первого запуска.' : nativeError;
+  $('detail').textContent = n?.errorDetail || '';
+  $('detail').hidden = !$('detail').textContent;
   $('toggle').textContent = state.enabled ? 'Выключить' : 'Включить';
   $('profile').value = state.profile;
   $('toggle').disabled = !n;
@@ -25,16 +26,17 @@ function render() {
   $('downloadError').textContent = view.installer.error || '';
   $('showInstaller').disabled = view.installer.state !== 'complete' || view.installer.exists === false;
   $('retryDownload').disabled = ['starting', 'in_progress'].includes(view.installer.state);
-  $('extensionId').textContent = `ID расширения: ${chrome.runtime.id}`;
   $('sites').replaceChildren(); $('empty').hidden = !!state.sites.length;
   for (const site of state.sites) {
     const card = document.createElement('section'); card.className = 'site';
     const row = document.createElement('div'); row.className = 'row';
     const title = document.createElement('h2'); title.textContent = site.domain;
     row.append(title, button('Удалить', () => call('remove', { domain: site.domain }), 'remove')); card.append(row);
+    const resources = document.createElement('details');
+    const summary = document.createElement('summary'); summary.textContent = 'Ресурсы сайта'; resources.append(summary);
     const label = document.createElement('label'), check = document.createElement('input'); check.type = 'checkbox'; check.checked = site.autoLearn;
     check.addEventListener('change', () => call('learning', { domain: site.domain, value: check.checked }));
-    label.append(check, ' Автоматически добавлять ресурсы сайта'); card.append(label);
+    label.append(check, ' Добавлять автоматически'); resources.append(label);
     const hosts = document.createElement('div'); hosts.className = 'hosts';
     for (const host of [...new Set([...(seeds[site.domain] || []), ...Object.keys(site.learned)])].sort()) {
       if (site.excluded.includes(host)) continue;
@@ -47,7 +49,7 @@ function render() {
       const span = document.createElement('span'); span.textContent = `Исключён: ${host}`;
       line.append(span, button('Вернуть', () => call('restore', { domain: site.domain, host }), 'exclude')); hosts.append(line);
     }
-    card.append(hosts); $('sites').append(card);
+    resources.append(hosts); card.append(resources); $('sites').append(card);
   }
 }
 $('add').addEventListener('submit', async e => { e.preventDefault(); if (await call('add', { domain: $('domain').value })) $('domain').value = ''; });
